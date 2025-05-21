@@ -2,7 +2,7 @@
 /*
 📁 db_test.php
 KDV 시스템 - 데이터베이스 연결 테스트
-Create at 250521_1120 Ver1.1
+Create at 250521_1125 Ver1.2
 */
 
 // 오류 표시 설정
@@ -10,8 +10,53 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 로그 파일 경로 설정
-$logFile = 'C:/xampp/htdocs/mysite/logs/db_errors.log';
+// 로그 파일 경로 설정 (가능한 여러 경로 중 쓸 수 있는 경로 선택)
+function getLogPath() {
+    // 가능한 로그 파일 경로 목록
+    $possiblePaths = [
+        'C:/xampp/htdocs/mysite/logs/db_errors.log',         // 로컬 환경
+        '/hosting/kdvsys/html/logs/db_errors.log',          // dothome 호스팅 경로
+        '/home/kdvsys/public_html/logs/db_errors.log',      // 다른 호스팅 경로
+        __DIR__ . '/logs/db_errors.log',                    // 현재 디렉토리
+        sys_get_temp_dir() . '/db_errors.log'              // 임시 디렉토리
+    ];
+    
+    // 각 경로를 순회하며 쓸 수 있는 디렉토리 확인
+    foreach ($possiblePaths as $path) {
+        $dir = dirname($path);
+        
+        // 디렉토리가 존재하면 해당 경로 사용
+        if (is_dir($dir) && is_writable($dir)) {
+            return $path;
+        }
+        
+        // 디렉토리가 없지만 생성 가능한 경우
+        if (!is_dir($dir) && is_writable(dirname($dir))) {
+            if (@mkdir($dir, 0755, true)) {
+                return $path;
+            }
+        }
+    }
+    
+    // 모든 경로가 사용 불가능한 경우 표준 오류 로그 사용
+    return null;
+}
+
+// 로그 파일 경로 가져오기
+$logFile = getLogPath();
+
+// 사용자 정의 로그 함수
+function writeLog($message) {
+    global $logFile;
+    
+    if ($logFile !== null) {
+        // 로그 파일이 존재하면 파일에 기록
+        error_log($message . "\n", 3, $logFile);
+    } else {
+        // 로그 파일이 없으면 PHP 기본 오류 로그에 기록
+        error_log($message);
+    }
+}
 
 // 환경 변수 로드 함수
 function loadEnv($path) {
@@ -60,7 +105,7 @@ foreach ($envPaths as $envPath) {
 // .env 파일을 읽을 수 없을 경우 기본값 사용
 if (!$envLoaded) {
     // 기본 DB 정보 사용
-    error_log("환경 변수 로드 실패, 기본 설정 사용", 3, $logFile);
+    writeLog("환경 변수 로드 실패, 기본 설정 사용");
     $_ENV['DB_HOST'] = 'localhost';
     $_ENV['DB_NAME'] = 'kdvsys';
     $_ENV['DB_USER'] = 'kdvsys';
@@ -219,7 +264,7 @@ try {
     echo '</div>';
     
     // 오류 로그 기록
-    error_log("DB 연결 실패: " . $e->getMessage(), 3, $logFile);
+    writeLog("DB 연결 실패: " . $e->getMessage());
 }
 
 // HTML 푸터
