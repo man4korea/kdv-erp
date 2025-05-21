@@ -2,7 +2,7 @@
 /*
 📁 db_test.php
 KDV 시스템 - 데이터베이스 연결 테스트
-Create at 250521_1115 Ver1.0
+Create at 250521_1120 Ver1.1
 */
 
 // 오류 표시 설정
@@ -16,7 +16,8 @@ $logFile = 'C:/xampp/htdocs/mysite/logs/db_errors.log';
 // 환경 변수 로드 함수
 function loadEnv($path) {
     if (!file_exists($path)) {
-        die(".env 파일이 존재하지 않습니다: $path");
+        // 파일이 존재하지 않으면 false 반환 (오류 발생 X)
+        return false;
     }
     
     $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -34,14 +35,32 @@ function loadEnv($path) {
         // 환경 변수를 설정합니다
         $_ENV[$name] = $value;
     }
+    return true;
 }
 
-// .env 파일 로드 시도
-try {
-    loadEnv(__DIR__ . '/.env');
-} catch (Exception $e) {
-    // .env 파일 로드 실패 시 기본 DB 정보 사용
-    error_log("환경 변수 로드 실패, 기본 설정 사용: " . $e->getMessage(), 3, $logFile);
+// 다양한 경로에서 .env 파일 로드 시도
+$envLoaded = false;
+
+// 가능한 .env 파일 경로들
+$envPaths = [
+    __DIR__ . '/.env',                     // 현재 디렉토리
+    '/hosting/kdvsys/html/.env',           // dothome 호스팅 경로
+    dirname(__DIR__) . '/.env',            // 한 단계 상위 디렉토리
+    '/home/kdvsys/public_html/.env'        // 다른 호스팅 환경
+];
+
+// 각 경로를 순회하며 .env 파일 오픈 시도
+foreach ($envPaths as $envPath) {
+    if (loadEnv($envPath)) {
+        $envLoaded = true;
+        break;
+    }
+}
+
+// .env 파일을 읽을 수 없을 경우 기본값 사용
+if (!$envLoaded) {
+    // 기본 DB 정보 사용
+    error_log("환경 변수 로드 실패, 기본 설정 사용", 3, $logFile);
     $_ENV['DB_HOST'] = 'localhost';
     $_ENV['DB_NAME'] = 'kdvsys';
     $_ENV['DB_USER'] = 'kdvsys';
