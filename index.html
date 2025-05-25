@@ -256,31 +256,129 @@
         </div>
     </div>
 
-    <!-- Firebase 설정 및 인증 스크립트 -->
-    <script type="module">
-        // Firebase 설정 import
-        import { app, db, auth } from './js/firebase-config.js';
-        import { LoginManager } from './js/auth.js';
+    <!-- Firebase SDK CDN 로드 (공식 버전 11.8.1) -->
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase 즉시 초기화 -->
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
         
-        // 전역 변수로 설정 (디버깅용)
-        window.firebase = { app, db, auth };
+        // Firebase 초기화
+        if (typeof firebase !== 'undefined') {
+            try {
+                const app = firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                
+                // 전역 변수로 등록
+                window.firebaseApp = app;
+                window.firebaseAuth = auth;
+                window.firebaseDb = db;
+                
+                console.log('🔥 Firebase 즉시 초기화 성공!');
+                console.log('Auth:', !!auth);
+                console.log('Firestore:', !!db);
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+            }
+        } else {
+            console.error('❌ Firebase SDK가 로드되지 않았습니다.');
+        }
+    </script>
+    
+    <!-- Firebase 설정 스크립트 -->
+    <script src="js/firebase-config.js"></script>
+    
+    <!-- 인증 관련 스크립트 -->
+    <script src="js/auth.js"></script>
+    
+    <!-- 메인 로그인 스크립트 -->
+    <script>
+        // 전역 변수
+        let loginManager;
         
-        // 로그인 매니저 초기화
-        const loginManager = new LoginManager();
-        window.loginManager = loginManager;
+        // Firebase 초기화 대기 및 로그인 매니저 설정
+        async function initializeApp() {
+            try {
+                console.log('🚀 앱 초기화 시작...');
+                
+                // Firebase 초기화 대기
+                const firebaseServices = await window.waitForFirebaseAndInitialize();
+                console.log('✅ Firebase 서비스 준비 완료');
+                
+                // 로그인 매니저 초기화 (AuthManager가 아닌 LoginManager 사용)
+                if (typeof LoginManager !== 'undefined') {
+                    loginManager = new LoginManager();
+                    window.loginManager = loginManager;
+                    console.log('🔐 LoginManager 초기화 완료');
+                } else {
+                    throw new Error('LoginManager 클래스를 찾을 수 없습니다.');
+                }
+                
+                // Firebase 서비스를 전역에 등록 (디버깅용)
+                window.firebase = firebaseServices;
+                
+                console.log('✅ 앱 초기화 완료');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ 앱 초기화 실패:', error);
+                showFirebaseError('시스템 초기화에 실패했습니다: ' + error.message);
+                return false;
+            }
+        }
+        
+        // Firebase 연결 오류 표시 함수
+        function showFirebaseError(message) {
+            const errorDiv = document.getElementById('generalError');
+            if (errorDiv) {
+                errorDiv.textContent = message;
+                errorDiv.style.color = 'var(--danger)';
+                errorDiv.style.backgroundColor = 'var(--bg-danger)';
+                errorDiv.classList.add('show');
+            }
+            
+            // 로그인 버튼 비활성화
+            const loginButton = document.getElementById('loginButton');
+            if (loginButton) {
+                loginButton.disabled = true;
+                loginButton.textContent = '시스템 연결 실패';
+            }
+        }
         
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 로그인 페이지 로드 완료');
+            console.log('📄 DOM 로드 완료');
+            
+            // 앱 초기화
+            const initSuccess = await initializeApp();
+            if (!initSuccess) {
+                return; // 초기화 실패시 종료
+            }
             
             // 이미 로그인되어 있는지 확인
-            const sessionCheck = await loginManager.checkExistingSession();
-            
-            // 로그인 상태면 메인 페이지로 이동
-            if (sessionCheck.isLoggedIn) {
-                console.log('🔄 이미 로그인됨 - 메인 페이지로 이동');
-                window.location.href = 'dashboard.html';
-                return;
+            try {
+                const sessionCheck = await loginManager.checkExistingSession();
+                
+                // 로그인 상태면 메인 페이지로 이동
+                if (sessionCheck.isLoggedIn) {
+                    console.log('🔄 이미 로그인됨 - 메인 페이지로 이동');
+                    window.location.href = 'dashboard.html';
+                    return;
+                }
+            } catch (error) {
+                console.warn('⚠️ 기존 세션 확인 실패:', error);
+                // 세션 확인 실패해도 로그인 페이지는 표시
             }
             
             // 폼 이벤트 리스너 설정
@@ -346,7 +444,7 @@
                     console.log('✅ 로그인 성공:', result.user.email);
                     showSuccessMessage('로그인 성공! 메인 페이지로 이동합니다...');
                     
-                    // 3초 후 메인 페이지로 이동
+                    // 1.5초 후 메인 페이지로 이동
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1500);
@@ -466,13 +564,17 @@
         function showGeneralError(message) {
             const errorDiv = document.getElementById('generalError');
             errorDiv.textContent = message;
+            errorDiv.style.color = 'var(--danger)';
+            errorDiv.style.backgroundColor = 'var(--bg-danger)';
             errorDiv.classList.add('show');
         }
         
         function clearAllErrors() {
             clearFieldError('email');
             clearFieldError('password');
-            document.getElementById('generalError').classList.remove('show');
+            const generalError = document.getElementById('generalError');
+            generalError.classList.remove('show');
+            generalError.style.backgroundColor = '';
         }
         
         function showSuccessMessage(message) {
@@ -529,5 +631,5 @@
             systemInfo.appendChild(testInfo);
         }
     </script>
-</body>
-</html>
+    </body>
+    </html>
