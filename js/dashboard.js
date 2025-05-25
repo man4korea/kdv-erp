@@ -35,7 +35,7 @@ function initializeAuthCheck() {
             console.log('❌ 미로그인 상태 - 로그인 페이지로 이동');
             authCheckComplete = true;
             showLoading(false);
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
             return;
         }
         
@@ -76,7 +76,7 @@ async function initializeDashboard(firebaseUser) {
             console.warn('⚠️ 접근 권한이 부족합니다');
             alert('이 페이지에 접근하려면 일반 이상의 권한이 필요합니다.');
             await loginManager.logout();
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
             return;
         }
     }
@@ -186,7 +186,7 @@ window.handleLogout = async function() {
             
             if (result.success) {
                 console.log('✅ 로그아웃 성공');
-                window.location.href = 'login.html';
+                window.location.href = 'index.html';
             } else {
                 throw new Error(result.error);
             }

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 dashboard.html
+     KDV ERP 시스템 - 메인 대시보드
+     Create at 250525_1030 Ver1.10 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대시보드 - KDV ERP 시스템</title>
+    <!-- DOMPurify for XSS Protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="css/styles.css?v=1.10">
+    <link rel="stylesheet" href="css/dashboard.css?v=1.10">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<style>
+/* 로딩 오버레이 스타일 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-primary);
+    border-radius: 50%;
+    border-top-color: var(--primary);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div style="margin-top: 20px; font-size: 14px; color: var(--text-secondary);" id="loadingMessage">
+            사용자 인증 중...
+        </div>
+    </div>
+    
+    <!-- 사이드바 오버레이 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1 class="logo text-primary">CorpEasy</h1>
+            <button class="btn btn-icon" id="sidebarCloseBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <!-- 대시보드 -->
+                <li class="active">
+                    <a href="dashboard.html" class="menu-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>대시보드</span>
+                    </a>
+                </li>
+                
+                <!-- 인사관리 (활성화) -->
+                <li class="has-submenu">
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-users"></i>
+                        <span>인사관리</span>
+                        <i class="fas fa-chevron-right submenu-arrow"></i>
+                    </a>
+                    <ul class="submenu">
+                        <li><a href="pages/hr/employee-list.html">직원 목록</a></li>
+                        <li><a href="pages/hr/employee-add.html">직원 등록</a></li>
+                        <li><a href="#" onclick="showComingSoon()">조직도</a></li>
+                        <li><a href="#" onclick="showComingSoon()">근태관리</a></li>
+                    </ul>
+                </li>
+                
+                <!-- 문서관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-file-alt"></i>
+                        <span>문서관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 양식관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-wpforms"></i>
+                        <span>양식관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 사규관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-gavel"></i>
+                        <span>사규관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 구분선 -->
+                <li style="margin: var(--spacing-4) 0;">
+                    <hr style="border: none; height: 1px; background: var(--border-primary);">
+                </li>
+                
+                <!-- 설정 -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-cog"></i>
+                        <span>시스템 설정</span>
+                    </a>
+                </li>
+                
+                <!-- 로그아웃 -->
+                <li>
+                    <a href="#" class="menu-item" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>로그아웃</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- 메인 헤더 -->
+    <header class="main-header">
+        <div class="header-left">
+            <button class="hamburger-btn" id="hamburgerBtn">
+                <div class="hamburger-icon">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+            </button>
+        </div>
+        
+        <div class="header-center">
+            <a href="dashboard.html" class="logo">CorpEasy</a>
+        </div>
+        
+        <div class="header-right">
+            <!-- 검색 -->
+            <div class="header-icon" title="검색">
+                <i class="fas fa-search"></i>
+            </div>
+            <!-- 성능 모니터링 -->
+            <div class="header-icon" title="성능 모니터링" onclick="showPerformanceDashboard()">
+                <i class="fas fa-tachometer-alt"></i>
+            </div>
+            
+            <!-- 알림 -->
+            <div class="header-icon" title="알림" onclick="showNotifications()">
+                <i class="fas fa-bell"></i>
+                <div class="notification-badge"></div>
+            </div>
+            
+            <!-- 사용자 프로필 -->
+            <div class="user-profile" id="userProfile" onclick="showUserMenu()">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userName">사용자</div>
+                <i class="fas fa-chevron-down" style="font-size: 12px; color: var(--text-secondary);"></i>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content" id="mainContent">
+        <div class="content-wrapper">
+            <!-- 페이지 제목 -->
+            <div class="page-title">
+                <h1>대시보드</h1>
+                <p class="page-subtitle">KDV ERP 시스템 현황을 한눈에 확인하세요</p>
+            </div>
+            
+            <!-- 통계 카드 -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">등록된 직원</div>
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalEmployees">158</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> 전월 대비 +12명
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">생성된 블로그 포스트</div>
+                        <div class="stat-icon green">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalPosts">42</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> 이번 주 +5개
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">트렌드 알림</div>
+                        <div class="stat-icon yellow">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalAlerts">13</div>
+                    <div class="stat-change">
+                        <i class="fas fa-minus"></i> 변동 없음
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">활성 AI 비서</div>
+                        <div class="stat-icon purple">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="activeAI">3</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> 신규 +1개
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 차트 영역 -->
+            <div class="dashboard-charts">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">최근 분석 콘텐츠</h3>
+                        <button class="btn btn-secondary btn-icon">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                    </div>
+                    <div class="chart-placeholder">
+                        📊 차트가 여기에 표시됩니다<br>
+                        <small>데이터 연동 후 실시간 차트가 표시됩니다</small>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">AI 비서 활용</h3>
+                    </div>
+                    <div style="padding: var(--spacing-4) 0;">
+                        <div style="margin-bottom: var(--spacing-4);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-1);">
+                                <span style="font-size: var(--text-sm);">생성된 응답</span>
+                                <span style="font-size: var(--text-sm); font-weight: 500;">1254</span>
+                            </div>
+                            <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px;">
+                                <div style="background: var(--primary); height: 100%; width: 85%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: var(--spacing-4);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-1);">
+                                <span style="font-size: var(--text-sm);">평균 응답 시간</span>
+                                <span style="font-size: var(--text-sm); font-weight: 500;">0.8초</span>
+                            </div>
+                            <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px;">
+                                <div style="background: var(--success); height: 100%; width: 90%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-1);">
+                                <span style="font-size: var(--text-sm);">고객 만족도</span>
+                                <span style="font-size: var(--text-sm); font-weight: 500; color: var(--success);">4.7/5</span>
+                            </div>
+                            <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px;">
+                                <div style="background: var(--success); height: 100%; width: 94%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: var(--spacing-4); text-align: center;">
+                            <span style="font-size: var(--text-sm); color: var(--success); font-weight: 500;">
+                                <i class="fas fa-arrow-up"></i> +32% 증가
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 최근 활동 -->
+            <div class="recent-activity">
+                <div class="chart-header">
+                    <h3 class="chart-title">최근 활동</h3>
+                    <button class="view-all" onclick="showAllActivity()">모든 활동 보기</button>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon blue">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">새로운 직원이 등록되었습니다</div>
+                        <div class="activity-time">5분 전</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon green">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">중소기업 디지털 전환 전략 문서가 생성되었습니다</div>
+                        <div class="activity-time">2시간 전</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon yellow">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">인공지능 기술 중소기업 적용 트렌드 알림</div>
+                        <div class="activity-time">4시간 전</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon purple">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">AI 비서가 새로운 정책 변화를 감지했습니다</div>
+                        <div class="activity-time">6시간 전</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Firebase 및 메인 스크립트 -->
+    <!-- 햄버거 버튼 기본 기능 (폴백) -->
+    <script>
+        // DOM 로드 즉시 기본 햄버거 기능 연결 (UI 컨트롤러 로드 전에도 작동)
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🍔 기본 햄버거 기능 초기화');
+            
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+            
+            // 기본 토글 함수
+            function toggleSidebar() {
+                if (sidebar && sidebar.classList.contains('active')) {
+                    // 닫기
+                    sidebar.classList.remove('active');
+                    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+                    if (hamburgerBtn) hamburgerBtn.classList.remove('active');
+                    console.log('🔴 사이드바 닫힘');
+                } else if (sidebar) {
+                    // 열기
+                    sidebar.classList.add('active');
+                    if (sidebarOverlay) sidebarOverlay.classList.add('active');
+                    if (hamburgerBtn) hamburgerBtn.classList.add('active');
+                    console.log('🟢 사이드바 열림');
+                }
+            }
+            
+            // 이벤트 연결
+            if (hamburgerBtn) {
+                hamburgerBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🍔 햄버거 버튼 클릭됨');
+                    toggleSidebar();
+                });
+                console.log('✅ 햄버거 버튼 이벤트 연결 완료');
+            } else {
+                console.error('❌ 햄버거 버튼을 찾을 수 없음');
+            }
+            
+            if (sidebarCloseBtn) {
+                sidebarCloseBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    toggleSidebar();
+                });
+            }
+            
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', toggleSidebar);
+            }
+            
+            // ESC 키로 사이드바 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebar && sidebar.classList.contains('active')) {
+                    toggleSidebar();
+                }
+            });
+            
+            // 전역 함수로 등록 (디버깅용)
+            window.toggleSidebarFallback = toggleSidebar;
+        });
+    </script>
+    
+    <!-- 대시보드 JavaScript 모듈 -->
+    <!-- Firebase 로드 실패시 대체 인증 체크 -->
+    <script>
+        // Firebase 모듈 로드 실패시 백업 인증 체크
+        let firebaseLoadTimeout = setTimeout(() => {
+            console.warn('⚠️ Firebase 모듈 로드 시간 초과 - 로그인 페이지로 이동');
+            window.location.href = 'index.html';
+            }, 1000); // 1초 대기
+        
+        // Firebase 모듈이 성공적으로 로드되면 타이머 해제
+        window.addEventListener('firebaseReady', () => {
+            console.log('✅ Firebase 모듈 로드 완료');
+            clearTimeout(firebaseLoadTimeout);
+        });
+    </script>
+    <script type="module" src="./js/dashboard.js?v=1.10"></script>
+</body>
+</html>
