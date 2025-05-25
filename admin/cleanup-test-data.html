@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 admin/cleanup-test-data.html
+     테스트 데이터 정리 도구
+     Create at 250524_2110 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>테스트 데이터 정리</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .keep { border-left: 4px solid #28a745; }
+        .delete { border-left: 4px solid #dc3545; }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #c82333; }
+        button.safe { background: #28a745; }
+        button.safe:hover { background: #218838; }
+        .collection-list {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧹 테스트 데이터 정리 도구</h1>
+    
+    <div class="card keep">
+        <h3>✅ 유지할 운영 데이터</h3>
+        <div class="collection-list">📁 departments - 부서 마스터 데이터
+👥 employees - 직원 정보  
+🔒 employee_private - 직원 민감정보
+👤 users - 사용자 계정
+📋 system_logs - 시스템 로그</div>
+        <p><strong>⚠️ 이 데이터들은 절대 삭제하지 마세요!</strong></p>
+    </div>
+    
+    <div class="card delete">
+        <h3>🗑️ 삭제 가능한 테스트 데이터</h3>
+        <div class="collection-list">🧪 simple-test - 연결 테스트용
+🧪 test - 기능 테스트용</div>
+        <div class="status info" id="cleanupStatus">테스트 데이터 정리 대기 중...</div>
+        <button onclick="cleanupTestData()">🗑️ 테스트 데이터 삭제</button>
+        <button class="safe" onclick="checkCollections()">📊 현재 컬렉션 확인</button>
+    </div>
+    
+    <div class="card">
+        <h3>📋 정리 가이드라인</h3>
+        <p><strong>개발 완료 후 정리 시점:</strong></p>
+        <ul>
+            <li>🎯 기능 개발이 완전히 끝난 후</li>
+            <li>🧪 모든 테스트가 통과한 후</li>
+            <li>🚀 운영 배포 직전</li>
+        </ul>
+        
+        <p><strong>정리 방법:</strong></p>
+        <ol>
+            <li>이 도구로 테스트 컬렉션만 삭제</li>
+            <li>Firebase Console에서 수동 확인</li>
+            <li>운영 데이터 백업 생성</li>
+        </ol>
+    </div>
+
+    <!-- Firebase v9+ modular SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            getDocs, 
+            doc,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // 현재 컬렉션 확인
+        window.checkCollections = async function() {
+            const statusEl = document.getElementById('cleanupStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '📊 컬렉션 확인 중...';
+            
+            try {
+                const collections = ['departments', 'employees', 'employee_private', 'users', 'system_logs', 'simple-test', 'test'];
+                const results = [];
+                
+                results.push('📊 현재 컬렉션 상태:');
+                results.push('');
+                
+                for (const collName of collections) {
+                    try {
+                        const snapshot = await getDocs(collection(db, collName));
+                        const status = snapshot.size > 0 ? '✅' : '📭';
+                        const type = ['simple-test', 'test'].includes(collName) ? '🧪' : '📁';
+                        results.push(`${status} ${type} ${collName}: ${snapshot.size}개 문서`);
+                    } catch (error) {
+                        results.push(`❌ ${collName}: 접근 불가`);
+                    }
+                }
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = results.join('\\n');
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 컬렉션 확인 실패: ${error.message}`;
+            }
+        }
+        
+        // 테스트 데이터 정리
+        window.cleanupTestData = async function() {
+            if (!confirm('⚠️ 테스트 컬렉션 (simple-test, test)을 삭제합니다.\\n\\n운영 데이터는 건드리지 않습니다.\\n\\n계속하시겠습니까?')) {
+                return;
+            }
+            
+            const statusEl = document.getElementById('cleanupStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '🧹 테스트 데이터 정리 중...';
+            
+            try {
+                const results = [];
+                const testCollections = ['simple-test', 'test'];
+                
+                for (const collName of testCollections) {
+                    try {
+                        results.push(`🗑️ ${collName} 컬렉션 정리 중...`);
+                        
+                        const snapshot = await getDocs(collection(db, collName));
+                        
+                        if (snapshot.empty) {
+                            results.push(`📭 ${collName}: 이미 비어있음`);
+                            continue;
+                        }
+                        
+                        // 각 문서 삭제
+                        let deletedCount = 0;
+                        for (const docSnapshot of snapshot.docs) {
+                            await deleteDoc(doc(db, collName, docSnapshot.id));
+                            deletedCount++;
+                        }
+                        
+                        results.push(`✅ ${collName}: ${deletedCount}개 문서 삭제 완료`);
+                        
+                    } catch (error) {
+                        results.push(`❌ ${collName} 삭제 실패: ${error.message}`);
+                    }
+                }
+                
+                results.push('');
+                results.push('🎉 테스트 데이터 정리 완료!');
+                results.push('운영 데이터는 모두 안전하게 보존되었습니다.');
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = results.join('\\n');
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 정리 중 오류 발생: ${error.message}`;
+            }
+        }
+        
+        // 페이지 로드시 자동 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkCollections, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<!--
+📁 test-auth-modules.html
+KDV 시스템 - 인증 모듈 분리 테스트
+Create at 250525_1920 Ver1.00
+-->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인증 모듈 분리 테스트</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .status.success { background-color: #d4edda; color: #155724; }
+        .status.error { background-color: #f8d7da; color: #721c24; }
+        .status.info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+        #testResults {
+            height: 200px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔐 인증 모듈 분리 테스트</h1>
+        <p>auth-core.js가 3개 모듈(session, permissions, encryption)로 잘 분리되었는지 테스트합니다.</p>
+        
+        <div class="test-section">
+            <h3>📋 모듈 로드 테스트</h3>
+            <div id="moduleLoadStatus">테스트 준비 중...</div>
+            <button onclick="runModuleLoadTest()">모듈 로드 테스트 실행</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔑 기본 기능 테스트</h3>
+            <div id="basicFunctionStatus">테스트 준비 중...</div>
+            <button onclick="runBasicFunctionTest()">기본 기능 테스트 실행</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🧪 통합 테스트</h3>
+            <div id="integrationStatus">테스트 준비 중...</div>
+            <button onclick="runIntegrationTest()">통합 테스트 실행</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 테스트 결과 로그</h3>
+            <div id="testResults"></div>
+            <button onclick="clearTestResults()">로그 지우기</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase 설정이 없어서 실제 인증은 불가하지만, 모듈 구조 테스트는 가능
+        let testResults = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            testResults.push(`[${timestamp}] ${message}`);
+            
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = testResults.join('\n');
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            
+            console.log(message);
+        }
+        
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<span class="status ${type}">${message}</span>`;
+        }
+        
+        // 모듈 로드 테스트
+        window.runModuleLoadTest = async function() {
+            log('=== 모듈 로드 테스트 시작 ===');
+            
+            try {
+                // 개별 모듈들 테스트
+                const { SessionManager } = await import('./js/auth-session.js');
+                log('✅ auth-session.js 로드 성공');
+                
+                const { PermissionsManager } = await import('./js/auth-permissions.js');
+                log('✅ auth-permissions.js 로드 성공');
+                
+                const { EncryptionManager } = await import('./js/auth-encryption.js');
+                log('✅ auth-encryption.js 로드 성공');
+                
+                // 통합 모듈 테스트
+                const { LoginManager } = await import('./js/auth-core.js');
+                log('✅ auth-core.js (통합 모듈) 로드 성공');
+                
+                // 기존 인터페이스 테스트
+                const { AuthSystem } = await import('./js/auth.js');
+                log('✅ auth.js (기존 인터페이스) 로드 성공');
+                
+                updateStatus('moduleLoadStatus', '모든 모듈 로드 성공!', 'success');
+                
+            } catch (error) {
+                log(`❌ 모듈 로드 실패: ${error.message}`, 'error');
+                updateStatus('moduleLoadStatus', `모듈 로드 실패: ${error.message}`, 'error');
+            }
+        };
+        
+        // 기본 기능 테스트
+        window.runBasicFunctionTest = async function() {
+            log('=== 기본 기능 테스트 시작 ===');
+            
+            try {
+                const { LoginManager } = await import('./js/auth-core.js');
+                const loginManager = new LoginManager();
+                
+                // 인스턴스 생성 테스트
+                log('✅ LoginManager 인스턴스 생성 성공');
+                
+                // 메서드 존재 확인
+                const methods = ['login', 'logout', 'getCurrentUser', 'checkExistingSession', 'sendPasswordReset'];
+                methods.forEach(method => {
+                    if (typeof loginManager[method] === 'function') {
+                        log(`✅ ${method} 메서드 존재 확인`);
+                    } else {
+                        throw new Error(`${method} 메서드가 존재하지 않음`);
+                    }
+                });
+                
+                // 새로운 권한 관련 메서드 확인
+                const newMethods = ['isAdmin', 'hasPermission', 'getUserPermissions', 'getSecurityLogs'];
+                newMethods.forEach(method => {
+                    if (typeof loginManager[method] === 'function') {
+                        log(`✅ 새로운 메서드 ${method} 존재 확인`);
+                    } else {
+                        log(`⚠️ 새로운 메서드 ${method} 없음 (정상)`);
+                    }
+                });
+                
+                updateStatus('basicFunctionStatus', '기본 기능 테스트 성공!', 'success');
+                
+            } catch (error) {
+                log(`❌ 기본 기능 테스트 실패: ${error.message}`, 'error');
+                updateStatus('basicFunctionStatus', `기본 기능 테스트 실패: ${error.message}`, 'error');
+            }
+        };
+        
+        // 통합 테스트
+        window.runIntegrationTest = async function() {
+            log('=== 통합 테스트 시작 ===');
+            
+            try {
+                const { AuthSystem } = await import('./js/auth.js');
+                const authSystem = new AuthSystem();
+                
+                // AuthSystem 인스턴스 생성 테스트
+                log('✅ AuthSystem 인스턴스 생성 성공');
+                
+                // 기존 메서드들이 모두 존재하는지 확인
+                const coreMethos = ['login', 'logout', 'getCurrentUser', 'checkExistingSession'];
+                coreMethos.forEach(method => {
+                    if (typeof authSystem[method] === 'function') {
+                        log(`✅ AuthSystem.${method} 메서드 존재`);
+                    } else {
+                        throw new Error(`AuthSystem.${method} 메서드가 존재하지 않음`);
+                    }
+                });
+                
+                // getCurrentUser 메서드 실행 테스트 (로그인 안 된 상태)
+                const currentUser = authSystem.getCurrentUser();
+                log(`✅ getCurrentUser() 실행 결과: ${JSON.stringify(currentUser)}`);
+                
+                // 전역 객체 확인
+                if (window.authSystem) {
+                    log('✅ 전역 authSystem 객체 존재 확인');
+                } else {
+                    log('⚠️ 전역 authSystem 객체 없음');
+                }
+                
+                if (window.LoginManager) {
+                    log('✅ 전역 LoginManager 클래스 존재 확인');
+                } else {
+                    log('⚠️ 전역 LoginManager 클래스 없음');
+                }
+                
+                updateStatus('integrationStatus', '통합 테스트 성공!', 'success');
+                
+            } catch (error) {
+                log(`❌ 통합 테스트 실패: ${error.message}`, 'error');
+                updateStatus('integrationStatus', `통합 테스트 실패: ${error.message}`, 'error');
+            }
+        };
+        
+        // 로그 지우기
+        window.clearTestResults = function() {
+            testResults = [];
+            document.getElementById('testResults').innerHTML = '';
+        };
+        
+        // 페이지 로드 시 자동 테스트 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            log('🚀 인증 모듈 분리 테스트 페이지 로드 완료');
+            log('Firebase 설정이 없어 실제 인증은 불가하지만, 모듈 구조 테스트는 가능합니다.');
+        });
+        
+    </script>
+</body>
+</html>

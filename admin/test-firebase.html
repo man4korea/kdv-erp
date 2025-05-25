@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 admin/test-firebase.html
+     Firebase 연결 테스트 페이지
+     Create at 250524_2050 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 연결 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>🔥 Firebase 연결 테스트</h1>
+    
+    <div class="test-card">
+        <h3>1. Firebase 초기화 상태</h3>
+        <div id="initStatus" class="status info">테스트 준비 중...</div>
+        <button onclick="testInit()">초기화 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3>2. Firestore 연결 테스트</h3>
+        <div id="firestoreStatus" class="status info">테스트 대기 중...</div>
+        <button onclick="testFirestore()">연결 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3>3. 간단한 읽기/쓰기 테스트</h3>
+        <div id="rwStatus" class="status info">테스트 대기 중...</div>
+        <button onclick="testReadWrite()">읽기/쓰기 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3>4. 보안 규칙 확인</h3>
+        <div id="rulesStatus" class="status info">
+현재 보안 규칙이 제한적일 가능성이 높습니다.
+Firebase Console에서 테스트 모드로 변경 필요:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+        </div>
+    </div>
+
+    <!-- Firebase v9+ modular SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            getDocs, 
+            setDoc, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        let app, db;
+        
+        // 초기화 테스트
+        window.testInit = function() {
+            const statusEl = document.getElementById('initStatus');
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                statusEl.className = 'status success';
+                statusEl.textContent = '✅ Firebase 초기화 성공!';
+                console.log('Firebase 초기화 성공');
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Firebase 초기화 실패: ' + error.message;
+                console.error('Firebase 초기화 실패:', error);
+            }
+        }
+        
+        // Firestore 연결 테스트
+        window.testFirestore = async function() {
+            const statusEl = document.getElementById('firestoreStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 Firestore 연결 테스트 중...';
+            
+            try {
+                if (!db) {
+                    throw new Error('Firebase가 초기화되지 않았습니다. 먼저 초기화 테스트를 실행하세요.');
+                }
+                
+                // 간단한 컬렉션 참조 테스트
+                const testRef = collection(db, 'test');
+                console.log('Firestore 참조 생성 성공:', testRef);
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = '✅ Firestore 연결 성공! (참조 생성 완료)';
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ Firestore 연결 실패: ' + error.message;
+                console.error('Firestore 연결 실패:', error);
+            }
+        }
+        
+        // 읽기/쓰기 테스트
+        window.testReadWrite = async function() {
+            const statusEl = document.getElementById('rwStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 읽기/쓰기 테스트 중...';
+            
+            try {
+                if (!db) {
+                    throw new Error('Firebase가 초기화되지 않았습니다.');
+                }
+                
+                // 1. 쓰기 테스트
+                const testDoc = doc(db, 'test', 'connection-test');
+                await setDoc(testDoc, {
+                    message: 'Firebase 연결 테스트',
+                    timestamp: serverTimestamp(),
+                    testTime: new Date().toISOString()
+                });
+                
+                console.log('✅ 쓰기 테스트 성공');
+                
+                // 2. 읽기 테스트
+                const testSnapshot = await getDocs(collection(db, 'test'));
+                console.log('✅ 읽기 테스트 성공, 문서 개수:', testSnapshot.size);
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ 읽기/쓰기 테스트 성공! (문서 ${testSnapshot.size}개 확인)`;
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = '❌ 읽기/쓰기 테스트 실패: ' + error.message;
+                console.error('읽기/쓰기 테스트 실패:', error);
+                
+                // 오류 타입별 자세한 안내
+                if (error.code === 'permission-denied') {
+                    statusEl.textContent += '\n\n💡 보안 규칙을 테스트 모드로 변경해주세요!';
+                }
+            }
+        }
+        
+        // 페이지 로드 시 자동 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Firebase 테스트 페이지 로드 완료');
+            testInit();
+        });
+    </script>
+</body>
+</html>

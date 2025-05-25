@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 auth-test.html
+     KDV 시스템 - 인증 기능 테스트 페이지
+     Create at 250524_1845 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>인증 테스트 - KDV ERP</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+        }
+        .test-result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: var(--radius-md);
+            font-family: monospace;
+            font-size: var(--text-sm);
+        }
+        .success { 
+            background-color: var(--bg-success); 
+            color: var(--success); 
+        }
+        .error { 
+            background-color: var(--bg-danger); 
+            color: var(--danger); 
+        }
+        .info { 
+            background-color: var(--bg-info); 
+            color: var(--info); 
+        }
+        .user-info {
+            background-color: var(--bg-secondary);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            margin-top: 15px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn-group .btn {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="test-container">
+            <h1 class="text-2xl font-bold">🔐 Firebase 인증 기능 테스트</h1>
+            <p class="text-secondary">로그인, 로그아웃, 세션 관리 등 인증 기능을 테스트합니다.</p>
+            
+            <!-- 현재 인증 상태 -->
+            <div class="test-section">
+                <h2 class="text-lg font-medium">📊 현재 인증 상태</h2>
+                <div id="authStatus" class="user-info">
+                    ⏳ 인증 상태를 확인하는 중...
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="checkAuthStatus()">상태 새로고침</button>
+                    <button class="btn btn-secondary" onclick="showUserDetails()">사용자 정보 보기</button>
+                </div>
+            </div>
+            
+            <!-- 테스트 로그인 -->
+            <div class="test-section">
+                <h2 class="text-lg font-medium">🧪 테스트 로그인</h2>
+                <p class="text-sm text-secondary">테스트 계정으로 빠른 로그인을 수행합니다.</p>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="testLogin()">테스트 계정 로그인</button>
+                    <button class="btn btn-danger" onclick="testLogout()">로그아웃</button>
+                </div>
+                
+                <div id="loginResult" class="test-result" style="display: none;">
+                    <!-- 로그인 결과가 여기에 표시됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 권한 테스트 -->
+            <div class="test-section">
+                <h2 class="text-lg font-medium">🔒 권한 테스트</h2>
+                <p class="text-sm text-secondary">다양한 보안 등급에 대한 접근 권한을 테스트합니다.</p>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="testPermission('일반')">일반 권한 확인</button>
+                    <button class="btn btn-primary" onclick="testPermission('2급')">2급 권한 확인</button>
+                    <button class="btn btn-primary" onclick="testPermission('1급')">1급 권한 확인</button>
+                </div>
+                
+                <div id="permissionResult" class="test-result" style="display: none;">
+                    <!-- 권한 테스트 결과가 여기에 표시됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 세션 테스트 -->
+            <div class="test-section">
+                <h2 class="text-lg font-medium">⏰ 세션 테스트</h2>
+                <p class="text-sm text-secondary">세션 지속성과 자동 로그인을 테스트합니다.</p>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="testSessionPersistence()">세션 지속성 테스트</button>
+                    <button class="btn btn-secondary" onclick="clearAllSessions()">모든 세션 삭제</button>
+                </div>
+                
+                <div id="sessionResult" class="test-result" style="display: none;">
+                    <!-- 세션 테스트 결과가 여기에 표시됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 네비게이션 -->
+            <div class="test-section">
+                <h2 class="text-lg font-medium">🧭 페이지 이동</h2>
+                <div class="btn-group">
+                    <a href="login.html" class="btn btn-primary">로그인 페이지</a>
+                    <a href="index.html" class="btn btn-secondary">메인 대시보드</a>
+                    <a href="firebase-test.html" class="btn btn-secondary">Firebase 연결 테스트</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase 및 인증 스크립트 -->
+    <script type="module">
+        // LoginManager 등 auth.js 모듈에서 필요한 기능들을 import
+        import { LoginManager, checkPageAccess, formatUserInfo } from './js/auth.js';
+        // Firebase 객체들은 LoginManager를 통해 간접적으로 사용되므로 직접 import는 불필요
+        // import { app, db, auth } from './js/firebase-config.js'; // Removed direct import
+        
+        // 전역 변수
+        let loginManager;
+        let firebaseAppInstance; // To store the app instance if needed for checkExistingSession
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 인증 테스트 페이지 로드');
+            
+            // 로그인 매니저 초기화
+            loginManager = new LoginManager();
+            window.loginManager = loginManager; // 전역 접근을 위해 노출
+            
+            // firebase-config.js에서 초기화된 app 인스턴스 가져오기 (필요하다면)
+            // import를 직접 하지 않으므로, 필요하다면 다른 방안 고려 또는 불필요 시 제거
+            // 현재 checkExistingSession에서 app.options.apiKey를 사용하므로 필요
+            // firebase-config.js에서 app을 전역으로 노출하거나 여기서 다시 import 필요
+            // 일단 여기서는 필요에 따라 firebase-config.js에서 app을 import하는 것으로 가정
+            import('./js/firebase-config.js').then(module => {
+                 firebaseAppInstance = module.app;
+                 // 초기 상태 확인
+                 checkAuthStatus();
+            }).catch(error => {
+                 console.error('❌ firebase-config.js 로드 실패:', error);
+                 updateAuthStatusDisplay(false, null, 'Firebase 설정 로드 오류');
+            });
+            
+            // 인증 상태 리스너 설정
+            loginManager.addAuthStateListener(onAuthStateChange);
+        });
+        
+        /**
+         * 인증 상태 변화 처리
+         */
+        function onAuthStateChange(isLoggedIn, userData) {
+            console.log('🔄 인증 상태 변화:', isLoggedIn, userData);
+            updateAuthStatusDisplay(isLoggedIn, userData);
+        }
+        
+        /**
+         * 현재 인증 상태 확인
+         */
+        window.checkAuthStatus = function() {
+            const currentUser = loginManager.getCurrentUser();
+            updateAuthStatusDisplay(currentUser.isLoggedIn, currentUser);
+        }
+        
+        /**
+         * 인증 상태 표시 업데이트
+         */
+        function updateAuthStatusDisplay(isLoggedIn, userData, errorMessage = null) { // Added optional errorMessage
+            const statusDiv = document.getElementById('authStatus');
+            
+            if (errorMessage) {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>인증 상태 확인 오류</strong><br>
+                        오류: ${errorMessage}
+                    </div>
+                `;
+            } else if (isLoggedIn && userData) {
+                statusDiv.innerHTML = `
+                    <div class="success">
+                        ✅ <strong>로그인 상태</strong><br>
+                        이메일: ${userData.user?.email || 'N/A'}<br>
+                        UID: ${userData.user?.uid || 'N/A'}<br>
+                        보안등급: ${userData.profile?.securityLevel || '정보 없음'}<br>
+                        관리자: ${userData.profile?.isAdmin ? '예' : '아니오'}<br>
+                        최근 로그인: ${userData.profile?.lastLoginAt ? new Date(userData.profile.lastLoginAt.toDate()).toLocaleString('ko-KR') : '정보 없음'} <!-- Use toDate() -->
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>로그아웃 상태</strong><br>
+                        인증이 필요합니다.
+                    </div>
+                `;
+            }
+        }
+        
+        /**
+         * 테스트 계정 로그인
+         */
+        window.testLogin = async function() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="info">⏳ 테스트 로그인 진행 중...</div>';
+            
+            try {
+                // NOTE: 테스트 계정 정보는 실제 사용 환경에서 노출되지 않도록 관리 필요
+                const result = await loginManager.login('man4korea@gmail.com', 'dmlwjdqn@Wkd24', true);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ <strong>로그인 성공!</strong><br>
+                            이메일: ${result.user.email}<br>
+                            UID: ${result.user.uid}<br>
+                            시간: ${new Date().toLocaleString('ko-KR')}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>로그인 실패!</strong><br>
+                        오류: ${error.message || error}<br>
+                        시간: ${new Date().toLocaleString('ko-KR')}
+                    </div>
+                `;
+                console.error('테스트 로그인 오류:', error);
+            }
+        }
+        
+        /**
+         * 로그아웃 테스트
+         */
+        window.testLogout = async function() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="info">⏳ 로그아웃 진행 중...</div>';
+            
+            try {
+                const result = await loginManager.logout();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ <strong>로그아웃 성공!</strong><br>
+                            시간: ${new Date().toLocaleString('ko-KR')}
+                        </div>
+                    `;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>로그아웃 실패!</strong><br>
+                        오류: ${error.message || error}<br>
+                        시간: ${new Date().toLocaleString('ko-KR')}
+                    </div>
+                `;
+                console.error('로그아웃 오류:', error);
+            }
+        }
+        
+        /**
+         * 권한 테스트
+         */
+        window.testPermission = function(requiredLevel) {
+            const resultDiv = document.getElementById('permissionResult');
+            resultDiv.style.display = 'block';
+            
+            const currentUser = loginManager.getCurrentUser();
+            
+            if (!currentUser.isLoggedIn) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>권한 확인 불가</strong><br>
+                        로그인이 필요합니다.
+                    </div>
+                `;
+                console.warn('권한 테스트: 로그인 필요');
+                return;
+            }
+            
+            const hasPermission = loginManager.checkUserPermission(requiredLevel);
+            const userLevel = currentUser.profile?.securityLevel || '정보 없음';
+            const isAdmin = currentUser.profile?.isAdmin || false;
+            
+            if (hasPermission) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ <strong>${requiredLevel} 권한 보유</strong><br>
+                        현재 사용자 등급: ${userLevel}<br>
+                        관리자 여부: ${isAdmin ? '예' : '아니오'}<br>
+                        접근 가능: 예
+                    </div>
+                `;
+                console.log(`권한 테스트 성공: ${requiredLevel} 권한 보유`);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>${requiredLevel} 권한 부족</strong><br>
+                        현재 사용자 등급: ${userLevel}<br>
+                        관리자 여부: ${isAdmin ? '예' : '아니오'}<br>
+                        접근 가능: 아니오
+                    </div>
+                `;
+                console.warn(`권한 테스트 실패: ${requiredLevel} 권한 부족`);
+            }
+        }
+        
+        /**
+         * 세션 지속성 테스트
+         */
+        window.testSessionPersistence = async function() {
+            const resultDiv = document.getElementById('sessionResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="info">⏳ 세션 지속성 확인 중...</div>';
+            
+            try {
+                const sessionInfo = await loginManager.checkExistingSession();
+                
+                // checkExistingSession에서 이미 리디렉션 처리를 하므로, 여기서는 결과만 표시
+                resultDiv.innerHTML = `
+                    <div class="info">
+                        📋 <strong>세션 정보</strong><br>
+                        로그인 상태: ${sessionInfo.isLoggedIn ? '예' : '아니오'}<br>
+                        사용자 이메일: ${sessionInfo.user?.email || 'N/A'}<br>
+                        <!-- Firebase app 인스턴스가 필요하므로, 위에 import하거나 전역으로 가져와야 함 -->
+                        세션 타입: ${localStorage.getItem('firebase:authUser:' + (firebaseAppInstance?.options.apiKey || '') + ':[DEFAULT]') ? '로컬 스토리지' : '세션 스토리지'}<br> <!-- Use firebaseAppInstance -->
+                        확인 시간: ${new Date().toLocaleString('ko-KR')}
+                    </div>
+                `;
+                console.log('세션 지속성 테스트 결과:', sessionInfo);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>세션 확인 실패</strong><br>
+                        오류: ${error.message}
+                    </div>
+                `;
+                console.error('세션 테스트 오류:', error);
+            } finally {
+                 // checkExistingSession에서 리디렉션이 발생할 수 있으므로 로딩 숨김 처리는 주의 필요
+            }
+        }
+        
+        /**
+         * 모든 세션 삭제
+         */
+        window.clearAllSessions = function() {
+            try {
+                // Firebase 인증 관련 로컬 데이터 삭제 (로그아웃 시 LoginManager에서도 수행)
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Firebase Auth 자체의 signOut 함수 호출
+                // LoginManager.logout() 사용을 권장하지만, 강제 삭제 테스트를 위해 직접 호출 가능
+                // import { getAuth, signOut } from 'https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js';
+                // const auth = getAuth(firebaseAppInstance);
+                // signOut(auth);
+
+                // 또는 LoginManager 인스턴스의 logout 메서드 호출
+                if (loginManager) {
+                     loginManager.logout();
+                } else {
+                     console.warn('LoginManager 인스턴스가 없습니다. 수동으로 로컬 스토리지 정리');
+                     localStorage.clear();
+                     sessionStorage.clear();
+                }
+                
+                const resultDiv = document.getElementById('sessionResult');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        ✅ <strong>모든 세션 데이터 삭제 완료</strong><br>
+                        페이지를 새로고침하세요. (3초 후 자동)
+                    </div>
+                `;
+                console.log('모든 세션 데이터 삭제 완료');
+                
+                // 3초 후 자동 새로고침
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+                
+            } catch (error) {
+                const resultDiv = document.getElementById('sessionResult');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>세션 삭제 실패</strong><br>
+                        오류: ${error.message}
+                    </div>
+                `;
+                console.error('세션 삭제 오류:', error);
+            }
+        }
+        
+        /**
+         * 사용자 상세 정보 표시
+         */
+        window.showUserDetails = function() {
+            const currentUser = loginManager.getCurrentUser();
+            
+            if (currentUser.isLoggedIn) {
+                const userInfo = formatUserInfo(currentUser);
+                console.log('👤 사용자 상세 정보:', currentUser);
+                alert(`사용자 정보:\\n${userInfo}\\n\\n자세한 정보는 콘솔을 확인하세요.`);
+            } else {
+                alert('로그인된 사용자가 없습니다.');
+            }
+        }
+
+        console.log('🔐 인증 테스트 모듈 로드 완료');
+
+    </script>
+</body>
+</html>

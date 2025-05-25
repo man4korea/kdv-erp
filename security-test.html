@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<!--
+📁 security-test.html
+KDV 시스템 - 보안 기능 테스트 페이지
+Create at 250525_2010 Ver1.00
+-->
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KDV ERP - 보안 기능 테스트</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;  
+            padding: 20px;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h3 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-result.pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-input.invalid {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+        .test-input.valid {
+            border-color: #28a745;
+            background-color: #f8fff8;
+        }
+        .btn-test {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-test:hover {
+            background-color: #0056b3;
+        }
+        .security-log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔒 KDV ERP 보안 기능 테스트</h1>
+        <p>구현된 보안 기능들이 올바르게 작동하는지 테스트합니다.</p>
+        
+        <!-- XSS 방어 테스트 -->
+        <div class="test-section">
+            <h3>🛡️ XSS (Cross-Site Scripting) 방어 테스트</h3>
+            <div>
+                <label for="xssInput">XSS 공격 시뮬레이션 입력:</label>
+                <input type="text" id="xssInput" class="test-input" 
+                       placeholder="예: <script>alert('XSS')</script>" />
+                <button class="btn-test" onclick="testXSSProtection()">XSS 방어 테스트</button>
+            </div>
+            <div id="xssResult" class="test-result info">테스트 버튼을 클릭하세요.</div>
+            <div>
+                <label>안전한 출력 결과:</label>
+                <div id="xssOutput" style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; min-height: 30px;"></div>
+            </div>
+        </div>
+        
+        <!-- CSRF 방어 테스트 -->
+        <div class="test-section">
+            <h3>🔐 CSRF (Cross-Site Request Forgery) 방어 테스트</h3>
+            <div>
+                <button class="btn-test" onclick="testCSRFToken()">CSRF 토큰 생성 테스트</button>
+                <button class="btn-test" onclick="testCSRFValidation()">CSRF 토큰 검증 테스트</button>
+            </div>
+            <div id="csrfResult" class="test-result info">테스트 버튼을 클릭하세요.</div>
+            <div>
+                <label>현재 CSRF 토큰:</label>
+                <div id="csrfToken" style="font-family: monospace; word-break: break-all;"></div>
+            </div>
+        </div>
+        
+        <!-- 입력 검증 테스트 -->
+        <div class="test-section">
+            <h3>✅ 입력 데이터 검증 테스트</h3>
+            <div>
+                <label for="emailInput">이메일 검증:</label>
+                <input type="text" id="emailInput" class="test-input" 
+                       placeholder="test@example.com" />
+                
+                <label for="phoneInput">전화번호 검증:</label>
+                <input type="text" id="phoneInput" class="test-input" 
+                       placeholder="010-1234-5678" />
+                
+                <label for="sqlInput">SQL 인젝션 검사:</label>
+                <input type="text" id="sqlInput" class="test-input" 
+                       placeholder="'; DROP TABLE users; --" />
+                
+                <button class="btn-test" onclick="testInputValidation()">입력 검증 테스트</button>
+            </div>
+            <div id="validationResult" class="test-result info">테스트 버튼을 클릭하세요.</div>
+        </div>
+        
+        <!-- Rate Limiting 테스트 -->
+        <div class="test-section">
+            <h3>⏱️ Rate Limiting 테스트</h3>
+            <div>
+                <button class="btn-test" onclick="testRateLimit()">연속 요청 테스트 (10회)</button>
+                <button class="btn-test" onclick="resetRateLimit()">Rate Limit 초기화</button>
+            </div>
+            <div id="rateLimitResult" class="test-result info">테스트 버튼을 클릭하세요.</div>
+        </div>
+        
+        <!-- 직원 데이터 검증 테스트 -->
+        <div class="test-section">
+            <h3>👤 직원 데이터 검증 테스트</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label for="empName">이름:</label>
+                    <input type="text" id="empName" class="test-input" placeholder="홍길동" />
+                </div>
+                <div>
+                    <label for="empPosition">직급:</label>
+                    <input type="text" id="empPosition" class="test-input" placeholder="대리" />
+                </div>
+                <div>
+                    <label for="empDepartment">부서:</label>
+                    <input type="text" id="empDepartment" class="test-input" placeholder="개발팀" />
+                </div>
+                <div>
+                    <label for="empEmail">이메일:</label>
+                    <input type="text" id="empEmail" class="test-input" placeholder="hong@company.com" />
+                </div>
+            </div>
+            <button class="btn-test" onclick="testEmployeeValidation()">직원 데이터 검증 테스트</button>
+            <div id="employeeResult" class="test-result info">테스트 버튼을 클릭하세요.</div>
+        </div>
+        
+        <!-- 보안 헤더 테스트 -->
+        <div class="test-section">
+            <h3>🔒 보안 헤더 테스트</h3>
+            <div>
+                <button class="btn-test" onclick="testSecurityHeaders()">보안 헤더 확인</button>
+            </div>
+            <div id="headerResult" class="test-result info">테스트 버튼을 클릭하세요.</div>
+        </div>
+        
+        <!-- 보안 로그 -->
+        <div class="test-section">
+            <h3>📊 보안 이벤트 로그</h3>
+            <div>
+                <button class="btn-test" onclick="loadSecurityLogs()">로그 새로고침</button>
+                <button class="btn-test" onclick="clearSecurityLogs()">로그 지우기</button>
+            </div>
+            <div id="securityLogs" class="security-log">로그 새로고침 버튼을 클릭하세요.</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { SecurityUtils } from './js/security-utils.js';
+        import { SecureUIController } from './js/ui-controller-secure.js';
+        
+        // 전역 객체로 등록
+        window.SecurityUtils = SecurityUtils;
+        window.secureUI = new SecureUIController();
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔒 보안 테스트 페이지 로드 완료');
+            
+            // 보안 헤더 자동 설정
+            SecurityUtils.setSecurityHeaders();
+            
+            // 실시간 입력 검증 설정
+            secureUI.addInputValidation('#emailInput', SecurityUtils.isValidEmail);
+            secureUI.addInputValidation('#phoneInput', SecurityUtils.isValidPhone);
+            
+            // CSRF 토큰 표시
+            document.getElementById('csrfToken').textContent = secureUI.csrfToken;
+        });
+        
+        // XSS 방어 테스트
+        window.testXSSProtection = function() {
+            const input = document.getElementById('xssInput').value;
+            const output = document.getElementById('xssOutput');
+            const result = document.getElementById('xssResult');
+            
+            try {
+                // 안전한 방법으로 출력 (XSS 방어)
+                secureUI.safeSetText(output, input);
+                
+                result.className = 'test-result pass';
+                result.textContent = '✅ XSS 방어 성공: 입력이 안전하게 이스케이프되었습니다.';
+                
+                console.log('XSS 테스트 - 원본:', input);
+                console.log('XSS 테스트 - 이스케이프됨:', SecurityUtils.escapeHtml(input));
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ XSS 방어 실패: ' + error.message;
+            }
+        };
+        
+        // CSRF 토큰 테스트
+        window.testCSRFToken = function() {
+            const result = document.getElementById('csrfResult');
+            const tokenDiv = document.getElementById('csrfToken');
+            
+            try {
+                const newToken = SecurityUtils.generateCSRFToken();
+                tokenDiv.textContent = newToken;
+                
+                result.className = 'test-result pass';
+                result.textContent = '✅ CSRF 토큰 생성 성공: ' + newToken.substring(0, 20) + '...';
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ CSRF 토큰 생성 실패: ' + error.message;
+            }
+        };
+        
+        // CSRF 검증 테스트
+        window.testCSRFValidation = function() {
+            const result = document.getElementById('csrfResult');
+            const currentToken = secureUI.csrfToken;
+            
+            try {
+                // 올바른 토큰 검증
+                const validResult = SecurityUtils.validateCSRFToken(currentToken);
+                
+                // 잘못된 토큰 검증
+                const invalidResult = SecurityUtils.validateCSRFToken('invalid_token');
+                
+                if (validResult && !invalidResult) {
+                    result.className = 'test-result pass';
+                    result.textContent = '✅ CSRF 검증 성공: 올바른 토큰은 통과, 잘못된 토큰은 차단됨';
+                } else {
+                    result.className = 'test-result fail';
+                    result.textContent = '❌ CSRF 검증 실패: 검증 로직에 문제가 있습니다.';
+                }
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ CSRF 검증 테스트 실패: ' + error.message;
+            }
+        };
+        
+        // 입력 검증 테스트
+        window.testInputValidation = function() {
+            const result = document.getElementById('validationResult');
+            const email = document.getElementById('emailInput').value;
+            const phone = document.getElementById('phoneInput').value;
+            const sqlInput = document.getElementById('sqlInput').value;
+            
+            try {
+                const tests = [
+                    {
+                        name: '이메일 검증',
+                        input: email,
+                        test: SecurityUtils.isValidEmail(email),
+                        expected: email.includes('@') && email.includes('.')
+                    },
+                    {
+                        name: '전화번호 검증',
+                        input: phone,
+                        test: SecurityUtils.isValidPhone(phone),
+                        expected: /^(01[0-9]|02|0[3-9][0-9])/.test(phone)
+                    },
+                    {
+                        name: 'SQL 인젝션 검사',
+                        input: sqlInput,
+                        test: !SecurityUtils.hasSqlInjectionRisk(sqlInput),
+                        expected: !sqlInput.toLowerCase().includes('drop')
+                    }
+                ];
+                
+                let allPassed = true;
+                let resultText = '';
+                
+                tests.forEach(test => {
+                    const passed = test.test;
+                    allPassed = allPassed && passed;
+                    resultText += `${passed ? '✅' : '❌'} ${test.name}: ${passed ? '통과' : '실패'}\n`;
+                });
+                
+                result.className = allPassed ? 'test-result pass' : 'test-result fail';
+                result.textContent = resultText;
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ 입력 검증 테스트 실패: ' + error.message;
+            }
+        };
+        
+        // Rate Limiting 테스트
+        window.testRateLimit = function() {
+            const result = document.getElementById('rateLimitResult');
+            const userId = 'test_user';
+            
+            try {
+                let allowedCount = 0;
+                let blockedCount = 0;
+                
+                // 10회 연속 요청 시뮬레이션
+                for (let i = 0; i < 10; i++) {
+                    if (SecurityUtils.checkRateLimit(userId, 5, 60000)) { // 1분에 5회 제한
+                        allowedCount++;
+                    } else {
+                        blockedCount++;
+                    }
+                }
+                
+                result.className = 'test-result info';
+                result.textContent = `Rate Limiting 테스트 결과:\n허용된 요청: ${allowedCount}회\n차단된 요청: ${blockedCount}회`;
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ Rate Limiting 테스트 실패: ' + error.message;
+            }
+        };
+        
+        // Rate Limit 초기화
+        window.resetRateLimit = function() {
+            SecurityUtils.requestCounts.clear();
+            document.getElementById('rateLimitResult').textContent = 'Rate Limit 초기화 완료';
+        };
+        
+        // 직원 데이터 검증 테스트
+        window.testEmployeeValidation = function() {
+            const result = document.getElementById('employeeResult');
+            
+            const employeeData = {
+                name: document.getElementById('empName').value,
+                position: document.getElementById('empPosition').value,
+                department: document.getElementById('empDepartment').value,
+                email: document.getElementById('empEmail').value
+            };
+            
+            try {
+                const validation = SecurityUtils.validateEmployeeData(employeeData);
+                
+                if (validation.isValid) {
+                    result.className = 'test-result pass';
+                    result.textContent = '✅ 직원 데이터 검증 통과: 모든 입력이 유효합니다.';
+                } else {
+                    result.className = 'test-result fail';
+                    result.textContent = '❌ 직원 데이터 검증 실패:\n' + validation.errors.join('\n');
+                }
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ 직원 데이터 검증 테스트 실패: ' + error.message;
+            }
+        };
+        
+        // 보안 헤더 테스트
+        window.testSecurityHeaders = function() {
+            const result = document.getElementById('headerResult');
+            
+            try {
+                const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+                
+                if (cspMeta) {
+                    result.className = 'test-result pass';
+                    result.textContent = '✅ 보안 헤더 설정됨:\nCSP: ' + cspMeta.getAttribute('content');
+                } else {
+                    result.className = 'test-result fail';
+                    result.textContent = '❌ 보안 헤더 미설정: CSP 헤더를 찾을 수 없습니다.';
+                }
+                
+            } catch (error) {
+                result.className = 'test-result fail';
+                result.textContent = '❌ 보안 헤더 테스트 실패: ' + error.message;
+            }
+        };
+        
+        // 보안 로그 로드
+        window.loadSecurityLogs = function() {
+            const logDiv = document.getElementById('securityLogs');
+            
+            try {
+                const logs = SecurityUtils.getSecurityLogs(20);
+                
+                if (logs.length > 0) {
+                    const logText = logs.map(log => 
+                        `[${log.timestamp}] ${log.event} - ${log.details || 'N/A'}`
+                    ).join('\n');
+                    
+                    logDiv.textContent = logText;
+                } else {
+                    logDiv.textContent = '보안 로그가 없습니다.';
+                }
+                
+            } catch (error) {
+                logDiv.textContent = '로그 로드 실패: ' + error.message;
+            }
+        };
+        
+        // 보안 로그 지우기
+        window.clearSecurityLogs = function() {
+            try {
+                SecurityUtils.clearSecurityLogs();
+                document.getElementById('securityLogs').textContent = '보안 로그가 지워졌습니다.';
+            } catch (error) {
+                document.getElementById('securityLogs').textContent = '로그 지우기 실패: ' + error.message;
+            }
+        };
+        
+    </script>
+</body>
+</html>

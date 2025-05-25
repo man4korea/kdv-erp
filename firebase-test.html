@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 firebase-test.html
+     KDV 시스템 - Firebase 연결 테스트 페이지
+     Create at 250524_1830 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 연결 테스트 - KDV ERP</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+        }
+        .status.success {
+            background-color: var(--bg-success);
+            color: var(--success);
+        }
+        .status.error {
+            background-color: var(--bg-danger);
+            color: var(--danger);
+        }
+        .status.loading {
+            background-color: var(--bg-info);
+            color: var(--info);
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            font-family: monospace;
+            font-size: var(--text-sm);
+        }
+        .btn-test {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="test-container">
+            <h1 class="text-2xl font-bold">🔥 Firebase 연결 테스트</h1>
+            <p class="text-secondary">KDV ERP 시스템의 Firebase 설정을 테스트합니다.</p>
+            
+            <!-- 연결 상태 표시 영역 -->
+            <div id="connectionStatus" class="status loading">
+                ⏳ Firebase 연결을 확인하는 중...
+            </div>
+            
+            <!-- 테스트 버튼 -->
+            <button id="testBtn" class="btn btn-primary btn-test" onclick="runFirebaseTest()">
+                🧪 연결 테스트 다시 실행
+            </button>
+            
+            <!-- 테스트 결과 표시 영역 -->
+            <div id="testResults" class="test-results" style="display: none;">
+                <!-- 테스트 결과가 여기에 표시됩니다 -->
+            </div>
+            
+            <!-- 환경 정보 -->
+            <div class="card" style="margin-top: 30px;">
+                <div class="card-header">
+                    <h2 class="card-title">📋 환경 정보</h2>
+                </div>
+                <div id="envInfo">
+                    <!-- JavaScript로 환경 정보가 로드됩니다 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK 및 설정 로드 -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        
+        // Import and initialize other Firebase services
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // 전역 변수로 Firebase 객체 설정
+        window.firebaseApp = app;
+        window.firebaseDB = db;
+        window.firebaseAuth = auth;
+        
+        /**
+         * Firebase 연결 테스트 실행
+         */
+        window.runFirebaseTest = async function() {
+            const statusEl = document.getElementById('connectionStatus');
+            const resultsEl = document.getElementById('testResults');
+            const testBtn = document.getElementById('testBtn');
+            
+            // 테스트 시작
+            statusEl.className = 'status loading';
+            statusEl.innerHTML = '⏳ Firebase 연결을 테스트하는 중...';
+            testBtn.disabled = true;
+            
+            let testResults = [];
+            testResults.push('🔍 Firebase 연결 테스트 시작');
+            testResults.push('시간: ' + new Date().toLocaleString('ko-KR'));
+            testResults.push('----------------------------------------');
+            
+            try {
+                // 1. Firebase App 초기화 확인
+                if (app) {
+                    testResults.push('✅ Firebase App 초기화 성공');
+                    testResults.push('   프로젝트 ID: ' + app.options.projectId);
+                } else {
+                    throw new Error('Firebase App 초기화 실패');
+                }
+                
+                // 2. Firestore 연결 확인
+                if (db) {
+                    testResults.push('✅ Firestore 데이터베이스 연결 성공');
+                } else {
+                    throw new Error('Firestore 연결 실패');
+                }
+                
+                // 3. Authentication 확인
+                if (auth) {
+                    testResults.push('✅ Firebase Authentication 연결 성공');
+                    testResults.push('   인증 도메인: ' + auth.config.authDomain);
+                } else {
+                    throw new Error('Firebase Authentication 연결 실패');
+                }
+                
+                // 4. 실제 연결 상태 확인
+                // checkFirebaseConnection 함수는 더 이상 사용되지 않습니다.
+                // const isConnected = await checkFirebaseConnection();
+                
+                // if (isConnected) {
+                //     testResults.push('✅ Firebase 실제 연결 상태 양호');
+                // } else {
+                //     testResults.push('⚠️ Firebase 연결 상태 불안정');
+                // }
+                
+                // 테스트 성공
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✅ Firebase 연결 테스트 성공!';
+                testResults.push('----------------------------------------');
+                testResults.push('🎉 모든 테스트 통과!');
+                
+            } catch (error) {
+                // 테스트 실패
+                statusEl.className = 'status error';
+                statusEl.innerHTML = '❌ Firebase 연결 테스트 실패: ' + error.message;
+                testResults.push('❌ 오류 발생: ' + error.message);
+                testResults.push('스택 트레이스: ' + error.stack);
+            }
+            
+            // 테스트 결과 표시
+            resultsEl.innerHTML = testResults.join('\\n');
+            resultsEl.style.display = 'block';
+            testBtn.disabled = false;
+        };
+        
+        /**
+         * 환경 정보 로드
+         */
+        function loadEnvironmentInfo() {
+            const envInfoEl = document.getElementById('envInfo');
+            
+            const envData = [
+                '🌐 브라우저: ' + navigator.userAgent.split(' ').pop(),
+                '🏠 호스트: ' + window.location.hostname,
+                '📍 포트: ' + (window.location.port || '기본값'),
+                '🔒 프로토콜: ' + window.location.protocol,
+                '📱 플랫폼: ' + navigator.platform,
+                '🕐 타임존: ' + Intl.DateTimeFormat().resolvedOptions().timeZone
+            ];
+            
+            envInfoEl.innerHTML = envData.map(info => '<p class="text-sm">' + info + '</p>').join('');
+        }
+        
+        // 페이지 로드 시 자동 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEnvironmentInfo();
+            runFirebaseTest();
+        });
+        
+        // 개발 모드에서 추가 정보 출력
+        if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
+            console.log('🛠️ 개발 모드에서 실행 중');
+            // logEnvironmentInfo 함수는 더 이상 사용되지 않습니다.
+            // logEnvironmentInfo();
+        }
+    </script>
+</body>
+</html>

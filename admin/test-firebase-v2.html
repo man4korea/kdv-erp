@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 admin/test-firebase-v2.html
+     Firebase 연결 테스트 페이지 v2 - 자세한 에러 분석
+     Create at 250524_2055 Ver2.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 연결 테스트 v2</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+        .warning { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        button:hover { background: #0056b3; transform: translateY(-1px); }
+        button:disabled { background: #6c757d; cursor: not-allowed; transform: none; }
+        button:active { transform: translateY(0); }
+        
+        .step-indicator {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .config-info {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        
+        h1 { color: #343a40; }
+        h3 { color: #495057; display: flex; align-items: center; }
+    </style>
+</head>
+<body>
+    <h1>🔥 Firebase 연결 테스트 v2.0</h1>
+    <p style="color: #6c757d;">자세한 에러 분석 및 단계별 진단</p>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">1</span>Firebase 프로젝트 정보</h3>
+        <div class="config-info" id="configInfo">설정 로딩 중...</div>
+    </div>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">2</span>Firebase 초기화 테스트</h3>
+        <div id="initStatus" class="status info">테스트 준비 중...</div>
+        <button onclick="testInit()">🚀 초기화 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">3</span>Firestore 기본 연결 테스트</h3>
+        <div id="firestoreStatus" class="status info">테스트 대기 중...</div>
+        <button onclick="testFirestore()">🔌 연결 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">4</span>단순 읽기 테스트</h3>
+        <div id="readStatus" class="status info">테스트 대기 중...</div>
+        <button onclick="testRead()">📖 읽기 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">5</span>단순 쓰기 테스트</h3>
+        <div id="writeStatus" class="status info">테스트 대기 중...</div>
+        <button onclick="testWrite()">📝 쓰기 테스트</button>
+    </div>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">6</span>네트워크 진단</h3>
+        <div id="networkStatus" class="status info">진단 대기 중...</div>
+        <button onclick="diagnoseNetwork()">🌐 네트워크 진단</button>
+    </div>
+    
+    <div class="test-card">
+        <h3><span class="step-indicator">⚡</span>전체 자동 테스트</h3>
+        <div id="autoStatus" class="status info">자동 테스트 대기 중...</div>
+        <button onclick="runAllTests()" style="background: #28a745;">🔄 전체 테스트 실행</button>
+    </div>
+
+    <!-- Firebase v9+ modular SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            connectFirestoreEmulator,
+            collection, 
+            doc, 
+            getDoc,
+            getDocs, 
+            setDoc, 
+            serverTimestamp,
+            enableNetwork,
+            disableNetwork
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        let app, db;
+        let testResults = {};
+        
+        // 설정 정보 표시
+        function showConfig() {
+            const configEl = document.getElementById('configInfo');
+            configEl.textContent = `프로젝트 ID: ${firebaseConfig.projectId}
+API 키: ${firebaseConfig.apiKey.substring(0, 10)}...
+인증 도메인: ${firebaseConfig.authDomain}
+스토리지: ${firebaseConfig.storageBucket}
+앱 ID: ${firebaseConfig.appId}`;
+        }
+        
+        // 1. Firebase 초기화 테스트
+        window.testInit = async function() {
+            const statusEl = document.getElementById('initStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 Firebase 초기화 중...';
+            
+            try {
+                console.log('🚀 Firebase 초기화 시작...');
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                
+                console.log('✅ Firebase 앱 초기화 성공:', app.name);
+                console.log('✅ Firestore 인스턴스 생성 성공');
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ Firebase 초기화 성공!
+
+앱 이름: ${app.name}
+프로젝트 ID: ${app.options.projectId}
+Firestore 상태: 연결됨`;
+                
+                testResults.init = true;
+                
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Firebase 초기화 실패
+
+에러: ${error.message}
+코드: ${error.code || 'unknown'}`;
+                
+                testResults.init = false;
+            }
+        }
+        
+        // 2. Firestore 기본 연결 테스트
+        window.testFirestore = async function() {
+            const statusEl = document.getElementById('firestoreStatus');
+            
+            if (!db) {
+                statusEl.className = 'status warning';
+                statusEl.textContent = '⚠️ Firebase가 초기화되지 않았습니다. 먼저 초기화 테스트를 실행하세요.';
+                return;
+            }
+            
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 Firestore 연결 테스트 중...';
+            
+            try {
+                console.log('🔌 Firestore 연결 테스트 시작...');
+                
+                // Firestore 인스턴스 정보 확인
+                console.log('📊 Firestore 설정:', {
+                    app: db.app.name,
+                    settings: db._delegate._databaseId
+                });
+                
+                // 컬렉션 참조 생성 테스트
+                const testCollection = collection(db, 'connection-test');
+                console.log('✅ 컬렉션 참조 생성 성공:', testCollection.id);
+                
+                // 문서 참조 생성 테스트
+                const testDoc = doc(db, 'connection-test', 'test-doc');
+                console.log('✅ 문서 참조 생성 성공:', testDoc.id);
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ Firestore 연결 테스트 성공!
+
+컬렉션 참조: ${testCollection.id}
+문서 참조: ${testDoc.id}
+데이터베이스 ID: ${db._delegate._databaseId.projectId}`;
+                
+                testResults.firestore = true;
+                
+            } catch (error) {
+                console.error('❌ Firestore 연결 테스트 실패:', error);
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Firestore 연결 테스트 실패
+
+에러: ${error.message}
+코드: ${error.code || 'unknown'}
+스택: ${error.stack}`;
+                
+                testResults.firestore = false;
+            }
+        }
+        
+        // 3. 읽기 테스트
+        window.testRead = async function() {
+            const statusEl = document.getElementById('readStatus');
+            
+            if (!db) {
+                statusEl.className = 'status warning';
+                statusEl.textContent = '⚠️ Firebase가 초기화되지 않았습니다.';
+                return;
+            }
+            
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 읽기 테스트 중...';
+            
+            try {
+                console.log('📖 Firestore 읽기 테스트 시작...');
+                
+                // 1. 빈 컬렉션 읽기 시도
+                const emptyCollection = collection(db, 'empty-test-collection');
+                const emptySnapshot = await getDocs(emptyCollection);
+                console.log('✅ 빈 컬렉션 읽기 성공, 문서 개수:', emptySnapshot.size);
+                
+                // 2. 존재할 수 있는 컬렉션 읽기
+                const testCollection = collection(db, 'test');
+                const testSnapshot = await getDocs(testCollection);
+                console.log('✅ 테스트 컬렉션 읽기 성공, 문서 개수:', testSnapshot.size);
+                
+                let docs = [];
+                testSnapshot.forEach(doc => {
+                    docs.push({
+                        id: doc.id,
+                        data: doc.data()
+                    });
+                });
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = `✅ 읽기 테스트 성공!
+
+빈 컬렉션 문서 수: ${emptySnapshot.size}
+테스트 컬렉션 문서 수: ${testSnapshot.size}
+읽기 권한: 정상
+${docs.length > 0 ? '\n\n문서 데이터:\n' + JSON.stringify(docs, null, 2) : ''}`;
+                
+                testResults.read = true;
+                
+            } catch (error) {
+                console.error('❌ 읽기 테스트 실패:', error);
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 읽기 테스트 실패
+
+에러: ${error.message}
+코드: ${error.code || 'unknown'}
+
+${error.code === 'permission-denied' ? 
+  '💡 권한 거부 - Firestore 보안 규칙을 확인하세요' : 
+  error.code === 'unavailable' ? 
+  '🌐 서비스 접근 불가 - 네트워크 연결을 확인하세요' :
+  '🤔 예상치 못한 에러입니다'}`;
+                
+                testResults.read = false;
+            }
+        }
+        
+        // 4. 쓰기 테스트
+        window.testWrite = async function() {
+            const statusEl = document.getElementById('writeStatus');
+            
+            if (!db) {
+                statusEl.className = 'status warning';
+                statusEl.textContent = '⚠️ Firebase가 초기화되지 않았습니다.';
+                return;
+            }
+            
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 쓰기 테스트 중...';
+            
+            try {
+                console.log('📝 Firestore 쓰기 테스트 시작...');
+                
+                // 현재 시간으로 고유한 문서 ID 생성
+                const timestamp = new Date().getTime();
+                const testDocId = `test-${timestamp}`;
+                
+                // 단순한 데이터로 쓰기 테스트 (serverTimestamp 사용 안함)
+                const testDoc = doc(db, 'test', testDocId);
+                const testData = {
+                    message: '쓰기 테스트 성공',
+                    timestamp: new Date().toISOString(),
+                    testId: testDocId,
+                    version: '2.0'
+                };
+                
+                console.log('📝 데이터 쓰기 시도:', testData);
+                
+                await setDoc(testDoc, testData);
+                console.log('✅ 문서 쓰기 성공:', testDocId);
+                
+                // 쓰기 검증을 위한 읽기
+                const writtenDoc = await getDoc(testDoc);
+                if (writtenDoc.exists()) {
+                    console.log('✅ 쓰기 검증 성공:', writtenDoc.data());
+                    
+                    statusEl.className = 'status success';
+                    statusEl.textContent = `✅ 쓰기 테스트 성공!
+
+문서 ID: ${testDocId}
+쓰기 권한: 정상
+데이터 검증: 성공
+
+작성된 데이터:
+${JSON.stringify(writtenDoc.data(), null, 2)}`;
+                    
+                    testResults.write = true;
+                } else {
+                    throw new Error('문서가 쓰여지지 않았습니다');
+                }
+                
+            } catch (error) {
+                console.error('❌ 쓰기 테스트 실패:', error);
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ 쓰기 테스트 실패
+
+에러: ${error.message}
+코드: ${error.code || 'unknown'}
+
+${error.code === 'permission-denied' ? 
+  '💡 권한 거부 - Firestore 보안 규칙을 확인하세요\n(현재 규칙: allow read, write: if true)' : 
+  error.code === 'unavailable' ? 
+  '🌐 서비스 접근 불가 - 네트워크 연결을 확인하세요' :
+  error.code === 'unauthenticated' ?
+  '🔐 인증 필요 - 익명 접근이 허용되지 않을 수 있습니다' :
+  '🤔 예상치 못한 에러입니다'}
+
+디버그 정보:
+- API 키 유효성: ${firebaseConfig.apiKey ? '✅' : '❌'}
+- 프로젝트 ID: ${firebaseConfig.projectId}
+- 현재 시간: ${new Date().toISOString()}`;
+                
+                testResults.write = false;
+            }
+        }
+        
+        // 5. 네트워크 진단
+        window.diagnoseNetwork = async function() {
+            const statusEl = document.getElementById('networkStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 네트워크 진단 중...';
+            
+            const diagnostics = [];
+            
+            try {
+                // 1. Firebase API 엔드포인트 연결 테스트
+                diagnostics.push('🌐 네트워크 진단 시작...');
+                
+                // 2. User Agent 확인
+                diagnostics.push(`📱 User Agent: ${navigator.userAgent}`);
+                
+                // 3. 온라인 상태 확인
+                diagnostics.push(`🌍 온라인 상태: ${navigator.onLine ? '✅ 온라인' : '❌ 오프라인'}`);
+                
+                // 4. Firestore URL 접근 테스트
+                const firestoreUrl = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
+                diagnostics.push(`🔗 Firestore API URL: ${firestoreUrl}`);
+                
+                try {
+                    const response = await fetch(firestoreUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${firebaseConfig.apiKey}`
+                        }
+                    });
+                    diagnostics.push(`📡 직접 API 호출: ${response.status} ${response.statusText}`);
+                } catch (fetchError) {
+                    diagnostics.push(`📡 직접 API 호출 실패: ${fetchError.message}`);
+                }
+                
+                // 5. 로컬 환경 확인
+                diagnostics.push(`📂 현재 URL: ${window.location.href}`);
+                diagnostics.push(`🔒 프로토콜: ${window.location.protocol}`);
+                
+                if (window.location.protocol === 'file:') {
+                    diagnostics.push('⚠️ 로컬 파일 접근 - CORS 문제가 발생할 수 있습니다');
+                }
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = diagnostics.join('\n');
+                
+            } catch (error) {
+                diagnostics.push(`❌ 진단 중 오류: ${error.message}`);
+                statusEl.className = 'status error';
+                statusEl.textContent = diagnostics.join('\n');
+            }
+        }
+        
+        // 6. 전체 자동 테스트
+        window.runAllTests = async function() {
+            const statusEl = document.getElementById('autoStatus');
+            statusEl.className = 'status info';
+            statusEl.textContent = '🔄 전체 자동 테스트 시작...';
+            
+            const results = [];
+            
+            try {
+                // 순차적으로 모든 테스트 실행
+                results.push('🚀 1/5 Firebase 초기화...');
+                statusEl.textContent = results.join('\n');
+                await testInit();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                results.push('🔌 2/5 Firestore 연결...');
+                statusEl.textContent = results.join('\n');
+                await testFirestore();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                results.push('📖 3/5 읽기 테스트...');
+                statusEl.textContent = results.join('\n');
+                await testRead();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                results.push('📝 4/5 쓰기 테스트...');
+                statusEl.textContent = results.join('\n');
+                await testWrite();
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                results.push('🌐 5/5 네트워크 진단...');
+                statusEl.textContent = results.join('\n');
+                await diagnoseNetwork();
+                
+                // 최종 결과 정리
+                const summary = [];
+                summary.push('📊 전체 테스트 결과:');
+                summary.push('');
+                summary.push(`초기화: ${testResults.init ? '✅ 성공' : '❌ 실패'}`);
+                summary.push(`Firestore 연결: ${testResults.firestore ? '✅ 성공' : '❌ 실패'}`);
+                summary.push(`읽기: ${testResults.read ? '✅ 성공' : '❌ 실패'}`);
+                summary.push(`쓰기: ${testResults.write ? '✅ 성공' : '❌ 실패'}`);
+                summary.push('');
+                
+                const successCount = Object.values(testResults).filter(r => r).length;
+                const totalCount = Object.keys(testResults).length;
+                
+                if (successCount === totalCount) {
+                    summary.push('🎉 모든 테스트 통과! Firebase 연결이 정상입니다.');
+                    statusEl.className = 'status success';
+                } else {
+                    summary.push(`⚠️ ${totalCount - successCount}개 테스트 실패. 위의 개별 테스트 결과를 확인하세요.`);
+                    statusEl.className = 'status warning';
+                }
+                
+                statusEl.textContent = summary.join('\n');
+                
+            } catch (error) {
+                results.push(`❌ 자동 테스트 중 오류: ${error.message}`);
+                statusEl.className = 'status error';
+                statusEl.textContent = results.join('\n');
+            }
+        }
+        
+        // 페이지 로드시 설정 정보 표시 및 자동 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Firebase 테스트 페이지 v2.0 로드 완료');
+            showConfig();
+            
+            // 3초 후 자동으로 초기화 테스트 실행
+            setTimeout(() => {
+                testInit();
+            }, 2000);
+        });
+    </script>
+</body>
+</html>

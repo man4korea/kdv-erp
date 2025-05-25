@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 pages/hr/employee-list.html
+     KDV ERP 시스템 - 직원 목록 페이지
+     Create at 250524_2100 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>직원 목록 - KDV ERP 시스템</title>
+    <link rel="stylesheet" href="../../css/styles.css">
+    <!-- Font Awesome 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 직원 목록 페이지 전용 스타일 */
+        .employee-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: var(--spacing-4);
+        }
+        
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-6);
+            flex-wrap: wrap;
+            gap: var(--spacing-4);
+        }
+        
+        .page-title {
+            margin-bottom: 0;
+        }
+        
+        .page-title h1 {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-1);
+        }
+        
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: var(--text-base);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: var(--spacing-2);
+        }
+        
+        /* 검색 및 필터 영역 */
+        .search-filter-section {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-6);
+            border: 1px solid var(--border-primary);
+        }
+        
+        .search-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: var(--spacing-4);
+            align-items: end;
+            margin-bottom: var(--spacing-4);
+        }
+        
+        .search-input-group {
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: var(--spacing-3);
+            padding-left: 40px;
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            font-size: var(--text-base);
+            transition: border-color var(--transition-speed);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+        
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-4);
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-1);
+        }
+        
+        .filter-label {
+            font-size: var(--text-sm);
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        .filter-select {
+            padding: var(--spacing-2) var(--spacing-3);
+            border: 1px solid var(--border-primary);
+            border-radius: var(--radius-md);
+            font-size: var(--text-sm);
+            background: var(--bg-primary);
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        /* 통계 카드 */
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-6);
+        }
+        
+        .stat-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-4);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-primary);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--text-2xl);
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: var(--spacing-1);
+        }
+        
+        .stat-label {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+        
+        /* 테이블 섹션 */
+        .table-section {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-primary);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            padding: var(--spacing-4) var(--spacing-6);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: var(--spacing-2);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        .employee-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .employee-table th,
+        .employee-table td {
+            padding: var(--spacing-3) var(--spacing-4);
+            text-align: left;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .employee-table th {
+            background: var(--bg-secondary);
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: background-color var(--transition-speed);
+        }
+        
+        .employee-table th:hover {
+            background: #e5e7eb;
+        }
+        
+        .employee-table th .sort-icon {
+            margin-left: var(--spacing-1);
+            color: var(--text-muted);
+        }
+        
+        .employee-table th.sort-active .sort-icon {
+            color: var(--primary);
+        }
+        
+        .employee-table tbody tr {
+            transition: background-color var(--transition-speed);
+        }
+        
+        .employee-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .employee-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .employee-email {
+            color: var(--text-secondary);
+            font-size: var(--text-sm);
+        }
+        
+        .employee-mobile {
+            font-family: monospace;
+            font-size: var(--text-sm);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px var(--spacing-2);
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            font-weight: 500;
+        }
+        
+        .status-badge.active {
+            background: var(--bg-success);
+            color: var(--success);
+        }
+        
+        .status-badge.leave {
+            background: var(--bg-warning);
+            color: var(--warning);
+        }
+        
+        .status-badge.retired {
+            background: var(--bg-danger);
+            color: var(--danger);
+        }
+        
+        .employee-actions {
+            display: flex;
+            gap: var(--spacing-1);
+        }
+        
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-speed);
+            font-size: var(--text-sm);
+        }
+        
+        .action-btn.view {
+            background: var(--bg-info);
+            color: var(--info);
+        }
+        
+        .action-btn.edit {
+            background: var(--bg-warning);
+            color: var(--warning);
+        }
+        
+        .action-btn.delete {
+            background: var(--bg-danger);
+            color: var(--danger);
+        }
+        
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        /* 페이지네이션 */
+        .pagination-section {
+            padding: var(--spacing-4) var(--spacing-6);
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: var(--spacing-4);
+        }
+        
+        .pagination-info {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: var(--spacing-2);
+            align-items: center;
+        }
+        
+        .pagination-btn {
+            padding: var(--spacing-2) var(--spacing-3);
+            border: 1px solid var(--border-primary);
+            background: var(--bg-primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: var(--text-sm);
+            transition: all var(--transition-speed);
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .page-size-selector {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+            font-size: var(--text-sm);
+        }
+        
+        /* 빈 상태 */
+        .empty-state {
+            text-align: center;
+            padding: var(--spacing-8);
+            color: var(--text-muted);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: var(--spacing-4);
+        }
+        
+        .empty-state h3 {
+            margin-bottom: var(--spacing-2);
+            color: var(--text-secondary);
+        }
+        
+        /* 로딩 스켈레톤 */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .skeleton-row {
+            height: 60px;
+        }
+        
+        .skeleton-text {
+            height: 16px;
+            border-radius: 4px;
+            margin: 8px 0;
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 1024px) {
+            .search-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .employee-container {
+                padding: var(--spacing-2);
+            }
+            
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .stats-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .employee-table th,
+            .employee-table td {
+                padding: var(--spacing-2);
+                font-size: var(--text-sm);
+            }
+            
+            .employee-actions {
+                flex-direction: column;
+            }
+            
+            .pagination-section {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            .stats-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-container {
+                font-size: var(--text-xs);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div style="margin-top: 20px; font-size: 14px; color: #666;" id="loadingMessage">
+            직원 목록을 불러오는 중...
+        </div>
+    </div>
+    
+    <!-- 사이드바 오버레이 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1 class="logo text-primary">CorpEasy</h1>
+            <button class="btn btn-icon" id="sidebarCloseBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <!-- 대시보드 -->
+                <li>
+                    <a href="../../index.html" class="menu-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>대시보드</span>
+                    </a>
+                </li>
+                
+                <!-- 인사관리 (활성화) -->
+                <li class="has-submenu open">
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-users"></i>
+                        <span>인사관리</span>
+                        <i class="fas fa-chevron-right submenu-arrow"></i>
+                    </a>
+                    <ul class="submenu show">
+                        <li class="active"><a href="employee-list.html">직원 목록</a></li>
+                        <li><a href="employee-add.html">직원 등록</a></li>
+                        <li><a href="#" onclick="showComingSoon()">조직도</a></li>
+                        <li><a href="#" onclick="showComingSoon()">근태관리</a></li>
+                    </ul>
+                </li>
+                
+                <!-- 문서관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-file-alt"></i>
+                        <span>문서관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 양식관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-wpforms"></i>
+                        <span>양식관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 사규관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-gavel"></i>
+                        <span>사규관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 구분선 -->
+                <li style="margin: var(--spacing-4) 0;">
+                    <hr style="border: none; height: 1px; background: var(--border-primary);">
+                </li>
+                
+                <!-- 설정 -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-cog"></i>
+                        <span>시스템 설정</span>
+                    </a>
+                </li>
+                
+                <!-- 로그아웃 -->
+                <li>
+                    <a href="#" class="menu-item" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>로그아웃</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- 메인 헤더 -->
+    <header class="main-header">
+        <div class="header-left">
+            <button class="hamburger-btn" id="hamburgerBtn">
+                <div class="hamburger-icon">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+            </button>
+        </div>
+        
+        <div class="header-center">
+            <a href="../../index.html" class="logo">CorpEasy</a>
+        </div>
+        
+        <div class="header-right">
+            <!-- 검색 -->
+            <div class="header-icon" title="검색">
+                <i class="fas fa-search"></i>
+            </div>
+            
+            <!-- 알림 -->
+            <div class="header-icon" title="알림" onclick="showNotifications()">
+                <i class="fas fa-bell"></i>
+                <div class="notification-badge"></div>
+            </div>
+            
+            <!-- 사용자 프로필 -->
+            <div class="user-profile" id="userProfile" onclick="showUserMenu()">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userName">사용자</div>
+                <i class="fas fa-chevron-down" style="font-size: 12px; color: var(--text-secondary);"></i>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content" id="mainContent">
+        <div class="employee-container">
+            <!-- 페이지 헤더 -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>직원 목록</h1>
+                    <p class="page-subtitle">등록된 모든 직원 정보를 조회하고 관리할 수 있습니다</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="refreshEmployeeList()">
+                        <i class="fas fa-sync"></i> 새로고침
+                    </button>
+                    <button class="btn btn-primary" onclick="goToEmployeeAdd()">
+                        <i class="fas fa-user-plus"></i> 직원 등록
+                    </button>
+                    <button class="btn btn-info" onclick="exportEmployeeList()">
+                        <i class="fas fa-download"></i> 내보내기
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 검색 및 필터 섹션 -->
+            <div class="search-filter-section">
+                <div class="search-row">
+                    <div class="search-input-group">
+                        <input type="text" 
+                               class="search-input" 
+                               id="searchInput" 
+                               placeholder="이름, 이메일, 휴대폰 번호로 검색..."
+                               autocomplete="off">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    <button class="btn btn-primary" onclick="searchEmployees()">
+                        <i class="fas fa-search"></i> 검색
+                    </button>
+                    <button class="btn btn-secondary" onclick="clearSearch()">
+                        <i class="fas fa-times"></i> 초기화
+                    </button>
+                    <button class="btn btn-info" onclick="toggleAdvancedFilter()">
+                        <i class="fas fa-filter"></i> 고급 필터
+                    </button>
+                </div>
+                
+                <div class="filter-row" id="advancedFilter" style="display: none;">
+                    <div class="filter-group">
+                        <label class="filter-label">부서</label>
+                        <select class="filter-select" id="departmentFilter">
+                            <option value="">전체 부서</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">재직 상태</label>
+                        <select class="filter-select" id="statusFilter">
+                            <option value="">전체 상태</option>
+                            <option value="재직">재직</option>
+                            <option value="휴직">휴직</option>
+                            <option value="퇴직">퇴직</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">직급</label>
+                        <select class="filter-select" id="positionFilter">
+                            <option value="">전체 직급</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">정렬 기준</label>
+                        <select class="filter-select" id="sortFilter">
+                            <option value="name">이름 순</option>
+                            <option value="department">부서 순</option>
+                            <option value="position">직급 순</option>
+                            <option value="joinDate">입사일 순</option>
+                            <option value="createdAt">등록일 순</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 통계 섹션 -->
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalEmployees">-</div>
+                    <div class="stat-label">전체 직원</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="activeEmployees">-</div>
+                    <div class="stat-label">재직 직원</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalDepartments">-</div>
+                    <div class="stat-label">부서 수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="recentJoins">-</div>
+                    <div class="stat-label">이번 달 입사</div>
+                </div>
+            </div>
+            
+            <!-- 테이블 섹션 -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3 class="table-title">직원 목록</h3>
+                    <div class="table-actions">
+                        <select class="filter-select" id="pageSize" onchange="changePageSize()">
+                            <option value="10">10개씩 보기</option>
+                            <option value="25" selected>25개씩 보기</option>
+                            <option value="50">50개씩 보기</option>
+                            <option value="100">100개씩 보기</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="employee-table" id="employeeTable">
+                        <thead>
+                            <tr>
+                                <th onclick="sortTable('name')">
+                                    이름
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th onclick="sortTable('department')">
+                                    부서
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th onclick="sortTable('position')">
+                                    직급
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th onclick="sortTable('status')">
+                                    상태
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th>연락처</th>
+                                <th onclick="sortTable('joinDate')">
+                                    입사일
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th>관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody">
+                            <!-- 로딩 스켈레톤 -->
+                            <tr class="skeleton-row">
+                                <td><div class="skeleton skeleton-text"></div></td>
+                                <td><div class="skeleton skeleton-text"></div></td>
+                                <td><div class="skeleton skeleton-text"></div></td>
+                                <td><div class="skeleton skeleton-text"></div></td>
+                                <td><div class="skeleton skeleton-text"></div></td>
+                                <td><div class="skeleton skeleton-text"></div></td>
+                                <td><div class="skeleton skeleton-text"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <!-- 빈 상태 -->
+                    <div class="empty-state" id="emptyState" style="display: none;">
+                        <i class="fas fa-users"></i>
+                        <h3>직원이 없습니다</h3>
+                        <p>조건에 맞는 직원이 없거나 아직 등록된 직원이 없습니다.</p>
+                        <button class="btn btn-primary" onclick="goToEmployeeAdd()">
+                            <i class="fas fa-user-plus"></i> 첫 직원 등록하기
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 페이지네이션 -->
+                <div class="pagination-section">
+                    <div class="pagination-info" id="paginationInfo">
+                        1-25 / 총 0명
+                    </div>
+                    <div class="pagination-controls" id="paginationControls">
+                        <button class="pagination-btn" id="prevBtn" onclick="goToPrevPage()" disabled>
+                            <i class="fas fa-chevron-left"></i> 이전
+                        </button>
+                        <span id="pageNumbers"></span>
+                        <button class="pagination-btn" id="nextBtn" onclick="goToNextPage()" disabled>
+                            다음 <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Firebase 및 직원 관리 스크립트 -->
+    <script type="module">
+        // Firebase 및 인증 모듈 import
+        import { LoginManager, checkPageAccess } from '../../js/auth.js';
+        import { app, db, auth } from '../../js/firebase-config.js';
+        
+        // 메인 UI 컨트롤 import
+        import '../../js/main.js';
+        
+        // 직원 관리 모듈 import
+        import { EmployeeManager } from '../../js/employee.js';
+        
+        // 전역 변수
+        let loginManager;
+        let employeeManager;
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('👥 직원 목록 페이지 로드');
+            
+            // 로딩 표시
+            showLoading('직원 목록을 불러오는 중...');
+            
+            try {
+                // 로그인 매니저 초기화
+                loginManager = new LoginManager();
+                window.loginManager = loginManager;
+                
+                // 페이지 접근 권한 확인
+                const hasAccess = checkPageAccess(loginManager, '일반', '../../login.html');
+                
+                if (hasAccess) {
+                    // 직원 매니저 초기화
+                    employeeManager = new EmployeeManager();
+                    window.employeeManager = employeeManager;
+                    
+                    // 사용자 정보 표시
+                    await updateUserInfo();
+                    
+                    // 직원 목록 초기화
+                    await employeeManager.initialize();
+                    
+                    console.log('✅ 직원 목록 페이지 초기화 완료');
+                }
+                
+            } catch (error) {
+                console.error('❌ 직원 목록 페이지 초기화 실패:', error);
+                showError('직원 목록을 로드하는 중 오류가 발생했습니다: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        /**
+         * 사용자 정보 업데이트
+         */
+        async function updateUserInfo() {
+            const currentUser = loginManager.getCurrentUser();
+            
+            if (currentUser.isLoggedIn && currentUser.user) {
+                const userAvatar = document.getElementById('userAvatar');
+                const userName = document.getElementById('userName');
+                
+                // 사용자 이름 첫 글자로 아바타 설정
+                const email = currentUser.user.email;
+                const firstChar = email.charAt(0).toUpperCase();
+                userAvatar.textContent = firstChar;
+                
+                // 사용자 이름 표시 (이메일의 @ 앞부분)
+                const displayName = email.split('@')[0];
+                userName.textContent = displayName;
+                
+                console.log('👤 사용자 정보 업데이트:', displayName);
+            }
+        }
+        
+        /**
+         * 로딩 상태 표시/숨김
+         */
+        function showLoading(message = '처리 중...') {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) loadingMessage.textContent = message;
+            loadingOverlay.classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('show');
+        }
+        
+        /**
+         * 에러 표시
+         */
+        function showError(message) {
+            // 간단한 에러 알림 (추후 toast 시스템으로 교체)
+            alert('오류: ' + message);
+        }
+        
+        // 전역 함수들
+        window.showNotifications = function() {
+            alert('알림 기능은 준비 중입니다.');
+        }
+        
+        window.showUserMenu = function() {
+            const currentUser = loginManager.getCurrentUser();
+            const userInfo = `사용자 정보:\\n이메일: ${currentUser.user?.email || '없음'}\\n로그인 시간: ${currentUser.user?.metadata?.lastSignInTime || '없음'}`;
+            alert(`${userInfo}\\n\\n- 프로필 설정\\n- 계정 관리\\n- 로그아웃`);
+        }
+        
+        window.showComingSoon = function() {
+            alert('해당 기능은 준비 중입니다.\\n인사관리 메뉴만 현재 이용 가능합니다.');
+        }
+        
+        window.handleLogout = async function() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                showLoading('로그아웃 중...');
+                
+                try {
+                    const result = await loginManager.logout();
+                    
+                    if (result.success) {
+                        console.log('✅ 로그아웃 성공');
+                        window.location.href = '../../login.html';
+                    } else {
+                        throw new Error(result.error);
+                    }
+                } catch (error) {
+                    console.error('❌ 로그아웃 실패:', error);
+                    alert('로그아웃 중 오류가 발생했습니다.');
+                } finally {
+                    hideLoading();
+                }
+            }
+        }
+        
+        // 직원 목록 관련 전역 함수들 (employee.js에서 호출)
+        window.refreshEmployeeList = function() {
+            if (employeeManager) {
+                employeeManager.loadEmployees();
+            }
+        }
+        
+        window.searchEmployees = function() {
+            if (employeeManager) {
+                employeeManager.performSearch();
+            }
+        }
+        
+        window.clearSearch = function() {
+            if (employeeManager) {
+                employeeManager.clearSearch();
+            }
+        }
+        
+        window.toggleAdvancedFilter = function() {
+            const filterEl = document.getElementById('advancedFilter');
+            const isVisible = filterEl.style.display !== 'none';
+            filterEl.style.display = isVisible ? 'none' : 'block';
+        }
+        
+        window.sortTable = function(field) {
+            if (employeeManager) {
+                employeeManager.sortTable(field);
+            }
+        }
+        
+        window.changePageSize = function() {
+            if (employeeManager) {
+                employeeManager.changePageSize();
+            }
+        }
+        
+        window.goToPrevPage = function() {
+            if (employeeManager) {
+                employeeManager.goToPrevPage();
+            }
+        }
+        
+        window.goToNextPage = function() {
+            if (employeeManager) {
+                employeeManager.goToNextPage();
+            }
+        }
+        
+        window.goToPage = function(page) {
+            if (employeeManager) {
+                employeeManager.goToPage(page);
+            }
+        }
+        
+        window.goToEmployeeAdd = function() {
+            window.location.href = 'employee-add.html';
+        }
+        
+        window.viewEmployee = function(employeeId) {
+            if (employeeManager) {
+                employeeManager.viewEmployee(employeeId);
+            }
+        }
+        
+        window.editEmployee = function(employeeId) {
+            window.location.href = `employee-edit.html?id=${employeeId}`;
+        }
+        
+        window.deleteEmployee = function(employeeId) {
+            if (employeeManager) {
+                employeeManager.deleteEmployee(employeeId);
+            }
+        }
+        
+        window.exportEmployeeList = function() {
+            if (employeeManager) {
+                employeeManager.exportToCSV();
+            }
+        }
+        
+        // 전역 객체로 등록 (디버깅용)
+        window.employeePage = {
+            loginManager,
+            employeeManager,
+            showLoading,
+            hideLoading,
+            showError
+        };
+    </script>
+</body>
+</html>

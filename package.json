@@ -1,0 +1,63 @@
+{
+  "name": "kdv-erp-system",
+  "version": "1.0.0",
+  "description": "KDV ERP 시스템 - 보안 강화 버전",
+  "main": "js/main.js",
+  "type": "module",
+  "scripts": {
+    "start": "http-server -p 8000 -c-1",
+    "dev": "http-server -p 8000 -c-1 --cors",
+    "build": "npm run lint && npm run security-check",
+    "lint": "eslint js/ --config .eslintrc.json",
+    "lint:fix": "eslint js/ --config .eslintrc.json --fix",
+    "security-check": "npm audit && npm run lint:security",
+    "lint:security": "eslint js/ --config .eslintrc.json --format json > security-report.json",
+    "test": "echo \"테스트 스크립트 준비 중\" && exit 0",
+    "audit:security": "npm audit --audit-level=moderate",
+    "update:deps": "npm update && npm audit fix"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-plugin-security": "^2.1.1",
+    "eslint-plugin-no-unsanitized": "^4.0.2",
+    "http-server": "^14.1.1"
+  },
+  "dependencies": {
+    "dompurify": "^3.0.8"
+  },
+  "keywords": [
+    "erp",
+    "employee-management",
+    "firebase",
+    "security",
+    "kdv"
+  ],
+  "author": "KDV Development Team",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/man4korea/kdv-erp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/man4korea/kdv-erp/issues"
+  },
+  "homepage": "https://github.com/man4korea/kdv-erp#readme",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "security": {
+    "advisories": {
+      "ignore": []
+    }
+  },
+  "config": {
+    "port": 8000,
+    "host": "localhost"
+  }
+}

@@ -1,0 +1,199 @@
+// 📁 firestore.rules
+// KDV ERP 시스템 - Firestore 보안 규칙
+// Create at 250524_2000 Ver1.00
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================================================
+    // 1. 사용자(users) 컬렉션 - 사용자 기본 정보 및 권한 관리
+    // ========================================================================
+    match /users/{userId} {
+      // 읽기 권한: 인증된 사용자만 자신의 정보와 다른 사용자의 기본 정보만 조회 가능
+      allow read: if request.auth != null && 
+        (request.auth.uid == userId || 
+         resource.data.securityLevel in ['일반', '관리자']);
+      
+      // 쓰기 권한: 관리자 이상만 사용자 정보 생성/수정 가능
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel in ['관리자', '최고관리자'];
+      
+      // 삭제 권한: 최고관리자만 가능
+      allow delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel == '최고관리자';
+    }
+    
+    // ========================================================================
+    // 2. 직원(employees) 컬렉션 - 직원 정보 관리
+    // ========================================================================
+    match /employees/{employeeId} {
+      // 읽기 권한: 인증된 모든 사용자가 직원 정보 조회 가능 (민감정보 제외)
+      allow read: if request.auth != null;
+      
+      // 생성 권한: 관리자 이상만 새 직원 등록 가능
+      allow create: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel in ['관리자', '최고관리자'] &&
+        validateEmployeeData(request.resource.data);
+      
+      // 수정 권한: 관리자 이상만 직원 정보 수정 가능
+      allow update: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel in ['관리자', '최고관리자'] &&
+        validateEmployeeData(request.resource.data);
+      
+      // 삭제 권한: 최고관리자만 가능
+      allow delete: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel == '최고관리자';
+    }
+    
+    // ========================================================================
+    // 3. 직원 개인정보(employee_private) 컬렉션 - 민감한 개인정보 분리 저장
+    // ========================================================================
+    match /employee_private/{employeeId} {
+      // 읽기/쓰기 권한: 최고관리자만 접근 가능
+      allow read, write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel == '최고관리자';
+    }
+    
+    // ========================================================================
+    // 4. 시스템 로그(system_logs) 컬렉션 - 시스템 활동 로그
+    // ========================================================================
+    match /system_logs/{logId} {
+      // 읽기 권한: 관리자 이상만 가능
+      allow read: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel in ['관리자', '최고관리자'];
+      
+      // 생성 권한: 모든 인증된 사용자가 로그 생성 가능 (시스템에서 자동 생성)
+      allow create: if request.auth != null;
+      
+      // 수정/삭제 금지: 로그는 변경 불가
+      allow update, delete: if false;
+    }
+    
+    // ========================================================================
+    // 5. 부서(departments) 컬렉션 - 조직도 관리
+    // ========================================================================
+    match /departments/{departmentId} {
+      // 읽기 권한: 모든 인증된 사용자
+      allow read: if request.auth != null;
+      
+      // 쓰기 권한: 관리자 이상만 가능
+      allow write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel in ['관리자', '최고관리자'];
+    }
+    
+    // ========================================================================
+    // 헬퍼 함수들
+    // ========================================================================
+    
+    // 직원 데이터 유효성 검증 함수
+    function validateEmployeeData(data) {
+      return data.keys().hasAll(['name', 'department', 'position', 'status']) &&
+             data.name is string && data.name.size() > 0 &&
+             data.department is string && data.department.size() > 0 &&
+             data.position is string && data.position.size() > 0 &&
+             data.status in ['재직', '휴직', '퇴직'] &&
+             (data.mobile == null || (data.mobile is string && data.mobile.matches('^010-[0-9]{4}-[0-9]{4}$'))) &&
+             (data.email == null || (data.email is string && data.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')));
+    }
+    
+    // 사용자 권한 확인 함수
+    function isAuthorized(level) {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel == level;
+    }
+    
+    // 관리자 이상 권한 확인 함수
+    function isManagerOrHigher() {
+      return request.auth != null && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.securityLevel in ['관리자', '최고관리자'];
+    }
+    
+    // ========================================================================
+    // 기본 거부 규칙 - 명시적으로 허용되지 않은 모든 요청 차단
+    // ========================================================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+/*
+==========================================================================
+보안 레벨 및 권한 체계
+==========================================================================
+
+1. 일반 사용자 (일반):
+   - 직원 정보 조회 (민감정보 제외)
+   - 자신의 사용자 정보 조회
+   - 부서 정보 조회
+
+2. 관리자 (관리자):
+   - 일반 사용자 권한 + 
+   - 직원 정보 생성/수정
+   - 사용자 정보 생성/수정
+   - 부서 정보 관리
+   - 시스템 로그 조회
+
+3. 최고관리자 (최고관리자):
+   - 관리자 권한 +
+   - 직원/사용자 삭제
+   - 민감한 개인정보 접근
+   - 모든 시스템 권한
+
+==========================================================================
+컬렉션별 데이터 구조
+==========================================================================
+
+1. users 컬렉션:
+   - uid: string (Firebase Auth UID)
+   - email: string
+   - displayName: string
+   - securityLevel: string ('일반', '관리자', '최고관리자')
+   - isActive: boolean
+   - createdAt: timestamp
+   - updatedAt: timestamp
+
+2. employees 컬렉션:
+   - name: string
+   - department: string
+   - position: string
+   - status: string ('재직', '휴직', '퇴직')
+   - mobile: string (optional)
+   - email: string (optional)
+   - joinDate: timestamp (optional)
+   - createdAt: timestamp
+   - updatedAt: timestamp
+   - createdBy: string (user uid)
+
+3. employee_private 컬렉션:
+   - employeeId: string (employees 컬렉션 참조)
+   - personalId: string (암호화된 주민등록번호)
+   - address: string
+   - emergencyContact: object
+   - bankAccount: object (암호화)
+   - salary: object (암호화)
+   - createdAt: timestamp
+   - updatedAt: timestamp
+
+4. system_logs 컬렉션:
+   - action: string
+   - userId: string
+   - targetCollection: string
+   - targetDocumentId: string
+   - details: object
+   - timestamp: timestamp
+   - ipAddress: string
+
+5. departments 컬렉션:
+   - name: string
+   - code: string
+   - parentDepartment: string (optional)
+   - manager: string (employee reference)
+   - isActive: boolean
+   - createdAt: timestamp
+   - updatedAt: timestamp
+
+==========================================================================
+*/

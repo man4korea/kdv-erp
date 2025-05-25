@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 admin/create-users.html
+     Firebase 사용자 계정 생성 도구
+     Create at 250524_2150 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 계정 생성 - KDV ERP 관리</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .result {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        button:hover { background: #0056b3; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        button.success { background: #28a745; }
+        button.success:hover { background: #218838; }
+        
+        .preset-users {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .preset-user {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #bbdefb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 KDV ERP 사용자 계정 생성</h1>
+        <p>Firebase Authentication에 사용자 계정을 생성합니다.</p>
+        
+        <div class="preset-users">
+            <h3>📋 기본 사용자 계정 생성</h3>
+            <p>시스템에 필요한 기본 계정들을 자동으로 생성합니다.</p>
+            
+            <div class="preset-user">
+                <strong>👑 관리자 계정</strong><br>
+                이메일: man4korea@gmail.com<br>
+                비밀번호: dmlwjdqn@Wkd24<br>
+                권한: 1급 관리자
+            </div>
+            
+            <div class="preset-user">
+                <strong>👤 테스트 사용자</strong><br>
+                이메일: test@kdv.co.kr<br>
+                비밀번호: test123456<br>
+                권한: 일반 사용자
+            </div>
+            
+            <button onclick="createPresetUsers()" class="success">🚀 기본 계정 생성</button>
+        </div>
+        
+        <hr style="margin: 40px 0;">
+        
+        <h3>➕ 개별 계정 생성</h3>
+        <form id="userForm">
+            <div class="form-group">
+                <label for="email">📧 이메일 주소</label>
+                <input type="email" id="email" required placeholder="user@company.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">🔒 비밀번호</label>
+                <input type="password" id="password" required placeholder="최소 6자 이상" minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="securityLevel">🔐 보안 등급</label>
+                <select id="securityLevel">
+                    <option value="일반">일반 사용자</option>
+                    <option value="2급">2급 보안</option>
+                    <option value="1급">1급 관리자</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="isAdmin">👑 관리자 권한</label>
+                <select id="isAdmin">
+                    <option value="false">일반 사용자</option>
+                    <option value="true">관리자</option>
+                </select>
+            </div>
+            
+            <button type="submit">➕ 계정 생성</button>
+        </form>
+        
+        <hr style="margin: 40px 0;">
+        
+        <h3>🔍 계정 관리</h3>
+        <button onclick="listUsers()">👥 전체 사용자 조회</button>
+        <button onclick="testLogin()">🧪 로그인 테스트</button>
+        <button onclick="clearResults()">🧹 결과 지우기</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { 
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc,
+            serverTimestamp,
+            collection,
+            getDocs
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        let app, auth, db;
+        
+        // Firebase 초기화
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            addResult('✅ Firebase 초기화 성공!', 'success');
+        } catch (error) {
+            addResult(`❌ Firebase 초기화 실패: ${error.message}`, 'error');
+        }
+        
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+            
+            // 스크롤을 아래로
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 개별 사용자 생성
+        async function createUser(email, password, securityLevel, isAdmin) {
+            try {
+                addResult(`🔄 사용자 생성 중: ${email}`);
+                
+                // Firebase Authentication에 사용자 생성
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                addResult(`✅ Authentication 사용자 생성 성공: ${user.uid}`);
+                
+                // Firestore에 사용자 프로필 저장
+                const userProfile = {
+                    email: email,
+                    securityLevel: securityLevel,
+                    isAdmin: isAdmin === 'true' || isAdmin === true,
+                    createdAt: serverTimestamp(),
+                    lastLoginAt: null,
+                    employeeId: null,
+                    displayName: email.split('@')[0]
+                };
+                
+                await setDoc(doc(db, 'users', user.uid), userProfile);
+                
+                addResult(`✅ 사용자 프로필 저장 완료: ${email} [${securityLevel}]`, 'success');
+                
+                // 로그아웃 (생성 후 자동 로그인되므로)
+                await signOut(auth);
+                
+                return { success: true, uid: user.uid };
+                
+            } catch (error) {
+                let errorMessage = `❌ 사용자 생성 실패: ${email}\\n`;
+                
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage += '이미 존재하는 이메일 주소입니다.';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage += '잘못된 이메일 형식입니다.';
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage += '비밀번호가 너무 약합니다. (최소 6자)';
+                        break;
+                    default:
+                        errorMessage += `오류 코드: ${error.code}\\n메시지: ${error.message}`;
+                }
+                
+                addResult(errorMessage, 'error');
+                return { success: false, error: error.code };
+            }
+        }
+        
+        // 기본 사용자들 생성
+        window.createPresetUsers = async function() {
+            addResult('🚀 기본 사용자 계정 생성 시작...', 'warning');
+            
+            const presetUsers = [
+                {
+                    email: 'man4korea@gmail.com',
+                    password: 'dmlwjdqn@Wkd24',
+                    securityLevel: '1급',
+                    isAdmin: true
+                },
+                {
+                    email: 'test@kdv.co.kr',
+                    password: 'test123456',
+                    securityLevel: '일반',
+                    isAdmin: false
+                }
+            ];
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const userData of presetUsers) {
+                const result = await createUser(
+                    userData.email, 
+                    userData.password, 
+                    userData.securityLevel, 
+                    userData.isAdmin
+                );
+                
+                if (result.success) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+                
+                // 잠시 대기 (API 제한 방지)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            addResult(`🎉 기본 사용자 생성 완료!\\n성공: ${successCount}개, 실패: ${failCount}개`, 'success');
+            
+            if (successCount > 0) {
+                addResult(`💡 이제 로그인 페이지에서 다음 계정으로 로그인할 수 있습니다:\\n- man4korea@gmail.com (관리자)\\n- test@kdv.co.kr (일반 사용자)`, 'success');
+            }
+        }
+        
+        // 폼 제출 처리
+        document.getElementById('userForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const securityLevel = document.getElementById('securityLevel').value;
+            const isAdmin = document.getElementById('isAdmin').value;
+            
+            await createUser(email, password, securityLevel, isAdmin);
+            
+            // 폼 초기화
+            this.reset();
+        });
+        
+        // 전체 사용자 조회
+        window.listUsers = async function() {
+            try {
+                addResult('🔍 전체 사용자 조회 중...');
+                
+                const usersRef = collection(db, 'users');
+                const snapshot = await getDocs(usersRef);
+                
+                if (snapshot.empty) {
+                    addResult('📭 등록된 사용자가 없습니다.', 'warning');
+                    return;
+                }
+                
+                let userList = `👥 등록된 사용자 목록 (총 ${snapshot.size}명):\\n\\n`;
+                
+                snapshot.forEach((doc) => {
+                    const userData = doc.data();
+                    const adminBadge = userData.isAdmin ? ' 👑' : '';
+                    userList += `📧 ${userData.email} [${userData.securityLevel}]${adminBadge}\\n`;
+                    userList += `   UID: ${doc.id}\\n`;
+                    userList += `   생성일: ${userData.createdAt?.toDate?.()?.toLocaleString() || 'N/A'}\\n\\n`;
+                });
+                
+                addResult(userList, 'success');
+                
+            } catch (error) {
+                addResult(`❌ 사용자 조회 실패: ${error.message}`, 'error');
+            }
+        }
+        
+        // 로그인 테스트
+        window.testLogin = async function() {
+            try {
+                const testEmail = 'man4korea@gmail.com';
+                const testPassword = 'dmlwjdqn@Wkd24';
+                
+                addResult(`🧪 로그인 테스트 시작: ${testEmail}`);
+                
+                const userCredential = await signInWithEmailAndPassword(auth, testEmail, testPassword);
+                addResult(`✅ 로그인 성공! UID: ${userCredential.user.uid}`, 'success');
+                
+                // 즉시 로그아웃
+                await signOut(auth);
+                addResult('✅ 로그아웃 완료', 'success');
+                
+            } catch (error) {
+                addResult(`❌ 로그인 테스트 실패: ${error.code} - ${error.message}`, 'error');
+            }
+        }
+        
+        // 결과 지우기
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // 전역 함수로 등록
+        window.createUser = createUser;
+    </script>
+</body>
+</html>

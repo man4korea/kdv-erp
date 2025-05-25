@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 index.html
+     KDV ERP 시스템 - 메인 대시보드
+     Create at 250524_1900 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대시보드 - KDV ERP 시스템</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- 사이드바 오버레이 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1 class="logo text-primary">CorpEasy</h1>
+            <button class="btn btn-icon" id="sidebarCloseBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <!-- 대시보드 -->
+                <li class="active">
+                    <a href="index.html" class="menu-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>대시보드</span>
+                    </a>
+                </li>
+                
+                <!-- 인사관리 (활성화) -->
+                <li class="has-submenu">
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-users"></i>
+                        <span>인사관리</span>
+                        <i class="fas fa-chevron-right submenu-arrow"></i>
+                    </a>
+                    <ul class="submenu">
+                        <li><a href="pages/hr/employee-list.html">직원 목록</a></li>
+                        <li><a href="pages/hr/employee-add.html">직원 등록</a></li>
+                        <li><a href="#" onclick="showComingSoon()">조직도</a></li>
+                        <li><a href="#" onclick="showComingSoon()">근태관리</a></li>
+                    </ul>
+                </li>
+                
+                <!-- 문서관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-file-alt"></i>
+                        <span>문서관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 양식관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-wpforms"></i>
+                        <span>양식관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 사규관리 (비활성화) -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-gavel"></i>
+                        <span>사규관리</span>
+                        <span class="menu-badge">준비중</span>
+                    </a>
+                </li>
+                
+                <!-- 구분선 -->
+                <li style="margin: var(--spacing-4) 0;">
+                    <hr style="border: none; height: 1px; background: var(--border-primary);">
+                </li>
+                
+                <!-- 설정 -->
+                <li>
+                    <a href="#" class="menu-item" onclick="showComingSoon()">
+                        <i class="fas fa-cog"></i>
+                        <span>시스템 설정</span>
+                    </a>
+                </li>
+                
+                <!-- 로그아웃 -->
+                <li>
+                    <a href="#" class="menu-item" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>로그아웃</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
+    <!-- 메인 헤더 -->
+    <header class="main-header">
+        <div class="header-left">
+            <button class="hamburger-btn" id="hamburgerBtn">
+                <div class="hamburger-icon">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+            </button>
+        </div>
+        
+        <div class="header-center">
+            <a href="index.html" class="logo">CorpEasy</a>
+        </div>
+        
+        <div class="header-right">
+            <!-- 검색 -->
+            <div class="header-icon" title="검색">
+                <i class="fas fa-search"></i>
+            </div>
+            
+            <!-- 알림 -->
+            <div class="header-icon" title="알림" onclick="showNotifications()">
+                <i class="fas fa-bell"></i>
+                <div class="notification-badge"></div>
+            </div>
+            
+            <!-- 사용자 프로필 -->
+            <div class="user-profile" id="userProfile" onclick="showUserMenu()">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userName">사용자</div>
+                <i class="fas fa-chevron-down" style="font-size: 12px; color: var(--text-secondary);"></i>
+            </div>
+        </div>
+    </header>
+    
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content" id="mainContent">
+        <div class="content-wrapper">
+            <!-- 페이지 제목 -->
+            <div class="page-title">
+                <h1>대시보드</h1>
+                <p class="page-subtitle">KDV ERP 시스템 현황을 한눈에 확인하세요</p>
+            </div>
+            
+            <!-- 통계 카드 -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">등록된 직원</div>
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalEmployees">158</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> 전월 대비 +12명
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">생성된 블로그 포스트</div>
+                        <div class="stat-icon green">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalPosts">42</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> 이번 주 +5개
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">트렌드 알림</div>
+                        <div class="stat-icon yellow">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalAlerts">13</div>
+                    <div class="stat-change">
+                        <i class="fas fa-minus"></i> 변동 없음
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">활성 AI 비서</div>
+                        <div class="stat-icon purple">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="activeAI">3</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> 신규 +1개
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 차트 영역 -->
+            <div class="dashboard-charts">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">최근 분석 콘텐츠</h3>
+                        <button class="btn btn-secondary btn-icon">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                    </div>
+                    <div class="chart-placeholder">
+                        📊 차트가 여기에 표시됩니다<br>
+                        <small>데이터 연동 후 실시간 차트가 표시됩니다</small>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">AI 비서 활용</h3>
+                    </div>
+                    <div style="padding: var(--spacing-4) 0;">
+                        <div style="margin-bottom: var(--spacing-4);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-1);">
+                                <span style="font-size: var(--text-sm);">생성된 응답</span>
+                                <span style="font-size: var(--text-sm); font-weight: 500;">1254</span>
+                            </div>
+                            <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px;">
+                                <div style="background: var(--primary); height: 100%; width: 85%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: var(--spacing-4);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-1);">
+                                <span style="font-size: var(--text-sm);">평균 응답 시간</span>
+                                <span style="font-size: var(--text-sm); font-weight: 500;">0.8초</span>
+                            </div>
+                            <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px;">
+                                <div style="background: var(--success); height: 100%; width: 90%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-1);">
+                                <span style="font-size: var(--text-sm);">고객 만족도</span>
+                                <span style="font-size: var(--text-sm); font-weight: 500; color: var(--success);">4.7/5</span>
+                            </div>
+                            <div style="background: var(--bg-secondary); height: 8px; border-radius: 4px;">
+                                <div style="background: var(--success); height: 100%; width: 94%; border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: var(--spacing-4); text-align: center;">
+                            <span style="font-size: var(--text-sm); color: var(--success); font-weight: 500;">
+                                <i class="fas fa-arrow-up"></i> +32% 증가
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 최근 활동 -->
+            <div class="recent-activity">
+                <div class="chart-header">
+                    <h3 class="chart-title">최근 활동</h3>
+                    <button class="view-all" onclick="showAllActivity()">모든 활동 보기</button>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon blue">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">새로운 직원이 등록되었습니다</div>
+                        <div class="activity-time">5분 전</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon green">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">중소기업 디지털 전환 전략 문서가 생성되었습니다</div>
+                        <div class="activity-time">2시간 전</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon yellow">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">인공지능 기술 중소기업 적용 트렌드 알림</div>
+                        <div class="activity-time">4시간 전</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon purple">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="activity-content">
+                        <div class="activity-title">AI 비서가 새로운 정책 변화를 감지했습니다</div>
+                        <div class="activity-time">6시간 전</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Firebase 및 메인 스크립트 -->
+    <!-- 대시보드 JavaScript 모듈 -->
+    <script type="module" src="./js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 admin/simple-firebase-test.html
+     Firebase 간단 테스트 - 핵심 문제 진단용
+     Create at 250524_2100 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 간단 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🔥 Firebase 간단 테스트</h1>
+    <p>핵심 문제만 진단합니다.</p>
+    
+    <button onclick="testBasic()">🚀 기본 테스트</button>
+    <button onclick="testWrite()">📝 쓰기 테스트</button>
+    <button onclick="checkProject()">🔍 프로젝트 확인</button>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            getDocs, 
+            setDoc
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        let app, db;
+        
+        function addResult(message, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.textContent = message;
+            results.appendChild(div);
+            console.log(message);
+        }
+        
+        // 기본 테스트
+        window.testBasic = async function() {
+            try {
+                addResult('🚀 Firebase 초기화 시작...');
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                
+                addResult(`✅ 초기화 성공!
+프로젝트 ID: ${app.options.projectId}
+앱 이름: ${app.name}`);
+                
+                // 빈 컬렉션 읽기 시도
+                addResult('📖 빈 컬렉션 읽기 테스트...');
+                const emptyRef = collection(db, 'empty-test');
+                const snapshot = await getDocs(emptyRef);
+                
+                addResult(`✅ 읽기 성공! 문서 개수: ${snapshot.size}`);
+                
+            } catch (error) {
+                addResult(`❌ 기본 테스트 실패:
+에러: ${error.message}
+코드: ${error.code}
+스택: ${error.stack}`, true);
+            }
+        }
+        
+        // 쓰기 테스트
+        window.testWrite = async function() {
+            if (!db) {
+                addResult('⚠️ 먼저 기본 테스트를 실행하세요.', true);
+                return;
+            }
+            
+            try {
+                addResult('📝 쓰기 테스트 시작...');
+                
+                const testDoc = doc(db, 'simple-test', 'test-doc');
+                await setDoc(testDoc, {
+                    message: '테스트 성공',
+                    timestamp: new Date().toISOString()
+                });
+                
+                addResult('✅ 쓰기 테스트 성공!');
+                
+            } catch (error) {
+                addResult(`❌ 쓰기 테스트 실패:
+에러: ${error.message}
+코드: ${error.code}
+
+💡 해결 방법:
+${error.code === 'permission-denied' ? 
+  '- Firestore 보안 규칙 확인' : 
+  error.code === 'unavailable' ? 
+  '- 네트워크 연결 확인\n- Firestore 서비스 활성화 확인' :
+  '- Firebase 프로젝트 설정 확인\n- API 키 권한 확인'}`, true);
+            }
+        }
+        
+        // 프로젝트 설정 확인
+        window.checkProject = async function() {
+            addResult(`🔍 프로젝트 설정 확인:
+
+프로젝트 ID: ${firebaseConfig.projectId}
+API 키: ${firebaseConfig.apiKey.substring(0, 15)}...
+인증 도메인: ${firebaseConfig.authDomain}
+현재 URL: ${window.location.href}
+브라우저: ${navigator.userAgent.split(' ').pop()}
+
+✅ 확인해야 할 사항:
+1. Firebase Console → Firestore Database 활성화
+2. 보안 규칙: allow read, write: if true
+3. API 키 권한에 Cloud Firestore API 포함
+4. 도메인 제한 없음 (또는 localhost 허용)`);
+        }
+        
+        // 페이지 로드시 자동 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            addResult('🧪 간단 테스트 페이지 로드 완료');
+            setTimeout(testBasic, 1000);
+        });
+    </script>
+</body>
+</html>

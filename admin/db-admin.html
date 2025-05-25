@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 admin/db-admin.html
+     KDV ERP 시스템 - 데이터베이스 관리자 페이지
+     Create at 250524_2000 Ver1.01 - Firebase v9+ modular 방식 적용 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터베이스 관리 - KDV ERP 시스템</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <!-- Font Awesome 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 관리자 페이지 전용 스타일 */
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--spacing-4);
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: var(--spacing-6);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--spacing-6);
+            text-align: center;
+        }
+        
+        .admin-warning {
+            background: var(--bg-warning);
+            color: #92400e;
+            padding: var(--spacing-4);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-6);
+            border-left: 4px solid var(--warning);
+        }
+        
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-6);
+        }
+        
+        .admin-card {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-6);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-primary);
+        }
+        
+        .admin-card h3 {
+            color: var(--primary);
+            margin-bottom: var(--spacing-4);
+            font-size: var(--text-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+        
+        .status-display {
+            background: var(--bg-secondary);
+            padding: var(--spacing-3);
+            border-radius: var(--radius-md);
+            margin: var(--spacing-3) 0;
+            font-family: monospace;
+            font-size: var(--text-sm);
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-2);
+            flex-wrap: wrap;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: var(--spacing-2) 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .collection-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-2) 0;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        
+        .collection-stat:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-badge {
+            background: var(--primary);
+            color: white;
+            padding: 2px var(--spacing-2);
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            font-weight: 500;
+        }
+        
+        .danger-zone {
+            border: 2px solid var(--danger);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-4);
+            margin-top: var(--spacing-4);
+        }
+        
+        .danger-zone h4 {
+            color: var(--danger);
+            margin-bottom: var(--spacing-3);
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div style="margin-top: 20px; font-size: 14px; color: #666;" id="loadingMessage">
+            데이터베이스 작업 중...
+        </div>
+    </div>
+    
+    <div class="admin-container">
+        <!-- 관리자 헤더 -->
+        <div class="admin-header">
+            <h1><i class="fas fa-database"></i> 데이터베이스 관리 시스템</h1>
+            <p>KDV ERP 시스템 - Firestore 데이터베이스 초기화 및 관리</p>
+        </div>
+        
+        <!-- 경고 메시지 -->
+        <div class="admin-warning">
+            <strong><i class="fas fa-exclamation-triangle"></i> 주의사항:</strong>
+            이 페이지는 관리자 전용입니다. 데이터베이스 초기화는 기존 데이터를 삭제할 수 있습니다.
+            운영 환경에서는 반드시 백업 후 실행하세요.
+        </div>
+        
+        <!-- 관리 패널 그리드 -->
+        <div class="admin-grid">
+            <!-- 데이터베이스 상태 -->
+            <div class="admin-card">
+                <h3><i class="fas fa-heartbeat"></i> 데이터베이스 상태</h3>
+                <div class="status-display" id="dbStatus">
+                    상태 확인 중...
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="checkDatabaseStatus()">
+                        <i class="fas fa-sync"></i> 상태 새로고침
+                    </button>
+                    <button class="btn btn-secondary" onclick="testConnection()">
+                        <i class="fas fa-plug"></i> 연결 테스트
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 데이터베이스 초기화 -->
+            <div class="admin-card">
+                <h3><i class="fas fa-rocket"></i> 데이터베이스 초기화</h3>
+                <p style="margin-bottom: var(--spacing-4); color: var(--text-secondary);">
+                    기본 컬렉션과 테스트 데이터를 생성합니다.
+                </p>
+                <div class="progress-bar" id="initProgress" style="display: none;">
+                    <div class="progress-fill" id="initProgressFill"></div>
+                </div>
+                <div class="status-display" id="initStatus" style="display: none;">
+                    초기화 대기 중...
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="initializeDatabase()">
+                        <i class="fas fa-play"></i> 초기화 시작
+                    </button>
+                    <button class="btn btn-info" onclick="showInitPreview()">
+                        <i class="fas fa-eye"></i> 미리보기
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 컬렉션 통계 -->
+            <div class="admin-card">
+                <h3><i class="fas fa-chart-bar"></i> 컬렉션 통계</h3>
+                <div id="collectionStats">
+                    <div class="collection-stat">
+                        <span>사용자 (users)</span>
+                        <span class="stat-badge" id="usersCount">-</span>
+                    </div>
+                    <div class="collection-stat">
+                        <span>직원 (employees)</span>
+                        <span class="stat-badge" id="employeesCount">-</span>
+                    </div>
+                    <div class="collection-stat">
+                        <span>부서 (departments)</span>
+                        <span class="stat-badge" id="departmentsCount">-</span>
+                    </div>
+                    <div class="collection-stat">
+                        <span>시스템 로그 (logs)</span>
+                        <span class="stat-badge" id="logsCount">-</span>
+                    </div>
+                </div>
+                <div class="action-buttons" style="margin-top: var(--spacing-4);">
+                    <button class="btn btn-primary" onclick="updateCollectionStats()">
+                        <i class="fas fa-calculator"></i> 통계 업데이트
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 시스템 로그 -->
+            <div class="admin-card">
+                <h3><i class="fas fa-list-alt"></i> 최근 시스템 로그</h3>
+                <div class="status-display" id="systemLogs" style="max-height: 300px;">
+                    로그 로딩 중...
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="loadSystemLogs()">
+                        <i class="fas fa-refresh"></i> 로그 새로고침
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportLogs()">
+                        <i class="fas fa-download"></i> 로그 내보내기
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 테스트 데이터 관리 -->
+            <div class="admin-card">
+                <h3><i class="fas fa-vial"></i> 테스트 데이터 관리</h3>
+                <p style="margin-bottom: var(--spacing-4); color: var(--text-secondary);">
+                    개발 및 테스트용 샘플 데이터를 관리합니다.
+                </p>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="createTestData()">
+                        <i class="fas fa-plus"></i> 테스트 데이터 생성
+                    </button>
+                    <button class="btn btn-info" onclick="validateTestData()">
+                        <i class="fas fa-check"></i> 데이터 검증
+                    </button>
+                </div>
+                
+                <!-- 위험 구역 -->
+                <div class="danger-zone">
+                    <h4><i class="fas fa-skull-crossbones"></i> 위험 구역</h4>
+                    <p style="font-size: var(--text-sm); margin-bottom: var(--spacing-3);">
+                        아래 작업은 되돌릴 수 없습니다. 신중히 실행하세요.
+                    </p>
+                    <button class="btn btn-danger" onclick="confirmClearTestData()">
+                        <i class="fas fa-trash"></i> 테스트 데이터 삭제
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 백업 및 복원 -->
+            <div class="admin-card">
+                <h3><i class="fas fa-archive"></i> 백업 및 복원</h3>
+                <p style="margin-bottom: var(--spacing-4); color: var(--text-secondary);">
+                    데이터베이스 백업 및 복원 기능 (개발 예정)
+                </p>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-save"></i> 백업 생성
+                    </button>
+                    <button class="btn btn-secondary" disabled>
+                        <i class="fas fa-upload"></i> 백업 복원
+                    </button>
+                </div>
+                <div style="margin-top: var(--spacing-3); font-size: var(--text-sm); color: var(--text-muted);">
+                    💡 현재 Firebase Console에서 수동 백업을 권장합니다.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase v9+ modular SDK -->
+    <script type="module">
+        // ===========================================
+        // Firebase 설정 및 초기화 (v9+ modular 방식)
+        // ===========================================
+        
+        // Firebase SDK imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            getDoc, 
+            getDocs, 
+            addDoc, 
+            setDoc, 
+            updateDoc, 
+            deleteDoc, 
+            query, 
+            where, 
+            orderBy, 
+            limit, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+        
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        // Firebase 초기화
+        let app, db, auth;
+        
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            console.log('🔥 Firebase 초기화 성공!');
+        } catch (error) {
+            console.error('❌ Firebase 초기화 실패:', error);
+            alert('Firebase 연결 실패! 페이지 새로고침을 시도해주세요.');
+        }
+        
+        // ===========================================
+        // 데이터베이스 초기화 클래스 (v9+ 방식)
+        // ===========================================
+        
+        class DatabaseInitializer {
+            constructor() {
+                this.db = db;
+                this.collections = {
+                    users: 'users',
+                    employees: 'employees', 
+                    employeePrivate: 'employee_private',
+                    systemLogs: 'system_logs',
+                    departments: 'departments'
+                };
+                
+                console.log('🔧 DatabaseInitializer 초기화 완료');
+            }
+            
+            // 전체 데이터베이스 초기화 실행
+            async initializeDatabase() {
+                try {
+                    console.log('🚀 데이터베이스 초기화 시작...');
+                    
+                    // 1. 부서 데이터 생성
+                    await this.createDepartments();
+                    
+                    // 2. 사용자 데이터 생성  
+                    await this.createUsers();
+                    
+                    // 3. 직원 데이터 생성
+                    await this.createEmployees();
+                    
+                    // 4. 시스템 로그 초기 설정
+                    await this.createInitialSystemLog();
+                    
+                    console.log('✅ 데이터베이스 초기화 완료!');
+                    return { success: true, message: '데이터베이스가 성공적으로 초기화되었습니다.' };
+                    
+                } catch (error) {
+                    console.error('❌ 데이터베이스 초기화 실패:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+            
+            // 부서 데이터 생성 (v9+ 방식)
+            async createDepartments() {
+                console.log('📁 부서 데이터 생성 중...');
+                
+                const departments = [
+                    {
+                        name: '임원',
+                        code: 'EXEC',
+                        parentDepartment: null,
+                        manager: null,
+                        isActive: true,
+                        description: '경영진 및 임원',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    },
+                    {
+                        name: '개발팀',
+                        code: 'DEV',
+                        parentDepartment: null,
+                        manager: null,
+                        isActive: true,
+                        description: '소프트웨어 개발 및 기술 지원',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    },
+                    {
+                        name: '영업팀',  
+                        code: 'SALES',
+                        parentDepartment: null,
+                        manager: null,
+                        isActive: true,
+                        description: '영업 및 마케팅',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    },
+                    {
+                        name: '관리팀',
+                        code: 'ADMIN',
+                        parentDepartment: null,
+                        manager: null,
+                        isActive: true,
+                        description: '인사, 총무, 회계 업무',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    }
+                ];
+                
+                for (const dept of departments) {
+                    const deptRef = doc(db, this.collections.departments, dept.code);
+                    await setDoc(deptRef, dept);
+                    console.log(`✅ 부서 생성 완료: ${dept.name} (${dept.code})`);
+                }
+            }
+            
+            // 사용자 데이터 생성 (v9+ 방식)
+            async createUsers() {
+                console.log('👤 사용자 데이터 생성 중...');
+                
+                const users = [
+                    {
+                        uid: 'initial-admin-uid',
+                        email: 'man4korea@gmail.com',
+                        displayName: '이인규',
+                        securityLevel: '1급',
+                        isAdmin: true,
+                        isActive: true,
+                        department: '임원',
+                        position: '총괄이사',
+                        lastLoginAt: null,
+                        loginCount: 0,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    },
+                    {
+                        uid: 'test-user-uid',
+                        email: 'test@kdv.co.kr',
+                        displayName: '테스트 사용자',
+                        securityLevel: '일반',  
+                        isAdmin: false,
+                        isActive: true,
+                        department: '개발팀',
+                        position: '개발자',
+                        lastLoginAt: null,
+                        loginCount: 0,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    }
+                ];
+                
+                for (const user of users) {
+                    const userRef = doc(db, this.collections.users, user.uid);
+                    await setDoc(userRef, user);
+                    console.log(`✅ 사용자 생성 완료: ${user.displayName} (${user.email})`);
+                }
+            }
+            
+            // 직원 데이터 생성 (v9+ 방식)
+            async createEmployees() {
+                console.log('👥 직원 데이터 생성 중...');
+                
+                const employees = [
+                    {
+                        name: '이인규',
+                        department: '임원',
+                        position: '총괄이사',
+                        status: '재직',
+                        joinDate: new Date('2025-05-22'),
+                        quitDate: null,
+                        mobile: '010-2604-5679',
+                        officialEmail: 'man4korea@gmail.com',
+                        employeeNumber: 'EMP001',
+                        avatar: null,
+                        notes: 'KDV 시스템 총괄 담당',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: 'system-init'
+                    },
+                    {
+                        name: '김개발',
+                        department: '개발팀',
+                        position: '선임 개발자',
+                        status: '재직',
+                        joinDate: new Date('2022-03-15'),
+                        quitDate: null,
+                        mobile: '010-1234-5678',
+                        officialEmail: 'dev@kdv.co.kr',
+                        employeeNumber: 'EMP002',
+                        avatar: null,
+                        notes: '웹 개발 전담',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: 'system-init'
+                    },
+                    {
+                        name: '박영업',
+                        department: '영업팀',
+                        position: '영업 대리',
+                        status: '재직',
+                        joinDate: new Date('2023-01-10'),
+                        quitDate: null,
+                        mobile: '010-2345-6789',
+                        officialEmail: 'sales@kdv.co.kr',
+                        employeeNumber: 'EMP003',
+                        avatar: null,
+                        notes: '신규 고객 개발 전담',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: 'system-init'
+                    },
+                    {
+                        name: '최관리',
+                        department: '관리팀',
+                        position: '주임',
+                        status: '재직',
+                        joinDate: new Date('2021-07-01'),
+                        quitDate: null,
+                        mobile: '010-3456-7890',
+                        officialEmail: 'admin@kdv.co.kr',
+                        employeeNumber: 'EMP004',
+                        avatar: null,
+                        notes: '인사 및 총무 업무',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: 'system-init'
+                    }
+                ];
+                
+                const employeeIds = [];
+                
+                for (const employee of employees) {
+                    const empRef = await addDoc(collection(db, this.collections.employees), employee);
+                    employeeIds.push({ id: empRef.id, name: employee.name, department: employee.department, officialEmail: employee.officialEmail });
+                    console.log(`✅ 직원 생성 완료: ${employee.name} (${employee.position})`);
+                }
+                
+                // 민감한 개인정보는 별도 컬렉션에 저장
+                await this.createEmployeePrivateData(employeeIds);
+                
+                return employeeIds;
+            }
+            
+            // 직원 민감정보 생성 (암호화)
+            async createEmployeePrivateData(employeeIds) {
+                console.log('🔒 직원 민감정보 생성 중...');
+                
+                const inkgyuEmployee = employeeIds.find(emp => emp.officialEmail === 'man4korea@gmail.com');
+                
+                const privateData = [];
+                
+                if (inkgyuEmployee) {
+                    privateData.push({
+                        employeeId: inkgyuEmployee.id, 
+                        personalEmail: this.encryptData('man4korea@hotmail.com'),
+                        residentRegistrationNumber: this.encryptData('600915-1566812'),
+                        homeAddress: this.encryptData('경기도 의정부시 회룡로 254 장암주공7단지 707동 202호'),
+                        emergencyContact: {
+                            name: this.encryptData('비공개'),
+                            relationship: '가족',
+                            phone: this.encryptData('010-9507-2421')
+                        },
+                        birthDate: this.encryptData('1960-09-15'),
+                        bankAccount: {
+                            bank: this.encryptData('국민은행'),
+                            accountNumber: this.encryptData('123456-78-901234'),
+                            accountHolder: this.encryptData('이인규')
+                        },
+                        salary: {
+                            baseSalary: this.encryptData('5000000'),
+                            allowances: this.encryptData('500000'),
+                            lastUpdated: serverTimestamp()
+                        },
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+                
+                for (const data of privateData) {
+                    const privateRef = doc(db, this.collections.employeePrivate, data.employeeId);
+                    await setDoc(privateRef, data);
+                    console.log(`🔒 민감정보 생성 완료: ${data.employeeId}`);
+                }
+            }
+            
+            // 초기 시스템 로그 생성 (v9+ 방식)
+            async createInitialSystemLog() {
+                console.log('📋 초기 시스템 로그 생성 중...');
+                
+                const initialLog = {
+                    action: 'SYSTEM_INIT',
+                    userId: 'admin-user-001',
+                    targetCollection: 'system',
+                    targetDocumentId: 'database-init',
+                    details: {
+                        message: '데이터베이스 초기화 완료',
+                        collections: Object.keys(this.collections),
+                        timestamp: new Date().toISOString()
+                    },
+                    timestamp: serverTimestamp(),
+                    ipAddress: 'localhost',
+                    userAgent: navigator.userAgent
+                };
+                
+                await addDoc(collection(db, this.collections.systemLogs), initialLog);
+                console.log('✅ 초기 시스템 로그 생성 완료');
+            }
+            
+            // 간단한 데이터 암호화 함수
+            encryptData(data) {
+                if (!data) return null;
+                
+                try {
+                    return btoa(unescape(encodeURIComponent(data + '_encrypted_' + Date.now())));
+                } catch (error) {
+                    console.error('암호화 실패:', error);
+                    return data;
+                }
+            }
+            
+            // 데이터베이스 상태 확인 (v9+ 방식)
+            async checkDatabaseStatus() {
+                console.log('🔍 데이터베이스 상태 확인 중...');
+                
+                const status = {
+                    collections: {},
+                    totalDocuments: 0,
+                    timestamp: new Date().toISOString()
+                };
+                
+                for (const [key, collectionName] of Object.entries(this.collections)) {
+                    try {
+                        const querySnapshot = await getDocs(collection(db, collectionName));
+                        status.collections[key] = {
+                            name: collectionName,
+                            documentCount: querySnapshot.size,
+                            exists: !querySnapshot.empty
+                        };
+                        status.totalDocuments += querySnapshot.size;
+                    } catch (error) {
+                        console.error(`컬렉션 상태 확인 실패 (${collectionName}):`, error);
+                        status.collections[key] = {
+                            name: collectionName,
+                            documentCount: 0,
+                            exists: false,
+                            error: error.message
+                        };
+                    }
+                }
+                
+                console.log('📊 데이터베이스 상태:', status);
+                return status;
+            }
+        }
+        
+        // ===========================================
+        // 전역 변수 및 함수들
+        // ===========================================
+        
+        const dbInitializer = new DatabaseInitializer();
+        
+        // 로딩 오버레이 함수들
+        window.showLoading = function(message) {
+            const overlay = document.getElementById('loadingOverlay');
+            const msgEl = document.getElementById('loadingMessage');
+            if (overlay) overlay.style.display = 'flex';
+            if (msgEl) msgEl.textContent = message || '처리 중...';
+        }
+        
+        window.hideLoading = function() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+        
+        // ===========================================
+        // 페이지 이벤트 핸들러들 (v9+ 방식)
+        // ===========================================
+        
+        // 데이터베이스 초기화
+        window.initializeDatabase = async function() {
+            showLoading('데이터베이스 초기화 중...');
+            const statusDisplay = document.getElementById('initStatus');
+            const progressBar = document.getElementById('initProgress');
+            const progressFill = document.getElementById('initProgressFill');
+            
+            statusDisplay.style.display = 'block';
+            progressBar.style.display = 'block';
+            statusDisplay.textContent = '초기화 시작...';
+            progressFill.style.width = '10%';
+            
+            try {
+                progressFill.style.width = '30%';
+                statusDisplay.textContent = '부서 데이터 생성 중...';
+                
+                const result = await dbInitializer.initializeDatabase();
+                
+                progressFill.style.width = '100%';
+                
+                if (result.success) {
+                    statusDisplay.textContent = '✅ ' + result.message;
+                    statusDisplay.style.color = 'var(--success)';
+                } else {
+                    statusDisplay.textContent = '❌ ' + result.error;
+                    statusDisplay.style.color = 'var(--danger)';
+                }
+            } catch (error) {
+                progressFill.style.width = '100%';
+                statusDisplay.textContent = '❌ 초기화 중 오류 발생: ' + error.message;
+                statusDisplay.style.color = 'var(--danger)';
+                console.error('초기화 오류:', error);
+            } finally {
+                hideLoading();
+                setTimeout(() => updateCollectionStats(), 1000);
+            }
+        }
+        
+        // 데이터베이스 상태 확인
+        window.checkDatabaseStatus = async function() {
+            showLoading('데이터베이스 상태 확인 중...');
+            const statusDisplay = document.getElementById('dbStatus');
+            
+            try {
+                const usersSnapshot = await getDocs(collection(db, 'users'));
+                const employeesSnapshot = await getDocs(collection(db, 'employees'));
+                const departmentsSnapshot = await getDocs(collection(db, 'departments'));
+                const logsSnapshot = await getDocs(collection(db, 'system_logs'));
+                
+                statusDisplay.textContent = `✅ Firestore 연결 상태 양호
+사용자: ${usersSnapshot.size}건
+직원: ${employeesSnapshot.size}건
+부서: ${departmentsSnapshot.size}건
+로그: ${logsSnapshot.size}건`;
+                statusDisplay.style.color = 'var(--success)';
+            } catch (error) {
+                statusDisplay.textContent = '❌ Firestore 연결 실패: ' + error.message;
+                statusDisplay.style.color = 'var(--danger)';
+                console.error('데이터베이스 상태 확인 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 컬렉션 통계 업데이트
+        window.updateCollectionStats = async function() {
+            showLoading('컬렉션 통계 업데이트 중...');
+            
+            try {
+                const stats = await dbInitializer.checkDatabaseStatus();
+                
+                document.getElementById('usersCount').textContent = stats.collections.users.documentCount;
+                document.getElementById('employeesCount').textContent = stats.collections.employees.documentCount;
+                document.getElementById('departmentsCount').textContent = stats.collections.departments.documentCount;
+                document.getElementById('logsCount').textContent = stats.collections.systemLogs.documentCount;
+            } catch (error) {
+                console.error('컬렉션 통계 업데이트 실패:', error);
+                alert('컬렉션 통계 업데이트 실패: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 연결 테스트
+        window.testConnection = async function() {
+            showLoading('연결 테스트 중...');
+            
+            try {
+                // 간단한 읽기 테스트
+                const testQuery = query(collection(db, 'departments'), limit(1));
+                await getDocs(testQuery);
+                alert('✅ Firebase 연결 테스트 성공!');
+            } catch (error) {
+                alert('❌ Firebase 연결 테스트 실패: ' + error.message);
+                console.error('연결 테스트 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 초기화 미리보기
+        window.showInitPreview = function() {
+            const previewText = `
+데이터베이스 초기화 예정 작업:
+
+📁 부서 (departments):
+- 임원 (EXEC)
+- 개발팀 (DEV)
+- 영업팀 (SALES)
+- 관리팀 (ADMIN)
+
+👤 사용자 (users):
+- 이인규 (man4korea@gmail.com) - 1급 관리자
+- 테스트 사용자 (test@kdv.co.kr) - 일반 사용자
+
+👥 직원 (employees):
+- 이인규 (총괄이사)
+- 김개발 (선임 개발자)
+- 박영업 (영업 대리)
+- 최관리 (주임)
+
+🔒 민감정보 (employee_private):
+- 이인규 개인정보 (암호화 저장)
+
+📋 시스템 로그 (system_logs):
+- 초기화 로그 생성
+            `;
+            
+            alert(previewText);
+        }
+        
+        // 테스트 데이터 생성
+        window.createTestData = async function() {
+            showLoading('테스트 데이터 생성 중...');
+            
+            try {
+                // 추가 테스트 직원 생성
+                const testEmployees = [
+                    {
+                        name: '홍테스트',
+                        department: '개발팀',
+                        position: '인턴',
+                        status: '재직',
+                        joinDate: new Date(),
+                        mobile: '010-9999-0001',
+                        officialEmail: 'test1@kdv.co.kr',
+                        employeeNumber: 'TEST001',
+                        notes: '테스트용 직원 데이터',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: 'admin-test'
+                    },
+                    {
+                        name: '김샘플',
+                        department: '영업팀',
+                        position: '인턴',
+                        status: '재직',
+                        joinDate: new Date(),
+                        mobile: '010-9999-0002',
+                        officialEmail: 'test2@kdv.co.kr',
+                        employeeNumber: 'TEST002',
+                        notes: '테스트용 직원 데이터',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                        createdBy: 'admin-test'
+                    }
+                ];
+                
+                for (const employee of testEmployees) {
+                    await addDoc(collection(db, 'employees'), employee);
+                    console.log(`✅ 테스트 직원 생성: ${employee.name}`);
+                }
+                
+                alert('✅ 테스트 데이터 생성 완료!');
+                updateCollectionStats();
+                
+            } catch (error) {
+                alert('❌ 테스트 데이터 생성 실패: ' + error.message);
+                console.error('테스트 데이터 생성 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 데이터 검증
+        window.validateTestData = async function() {
+            showLoading('데이터 검증 중...');
+            
+            try {
+                const validationResults = [];
+                
+                // 부서 데이터 검증
+                const deptSnapshot = await getDocs(collection(db, 'departments'));
+                validationResults.push(`부서: ${deptSnapshot.size}개 - ${deptSnapshot.empty ? '❌' : '✅'}`);
+                
+                // 직원 데이터 검증
+                const empSnapshot = await getDocs(collection(db, 'employees'));
+                validationResults.push(`직원: ${empSnapshot.size}개 - ${empSnapshot.empty ? '❌' : '✅'}`);
+                
+                // 사용자 데이터 검증
+                const userSnapshot = await getDocs(collection(db, 'users'));
+                validationResults.push(`사용자: ${userSnapshot.size}개 - ${userSnapshot.empty ? '❌' : '✅'}`);
+                
+                // 로그 데이터 검증
+                const logSnapshot = await getDocs(collection(db, 'system_logs'));
+                validationResults.push(`시스템 로그: ${logSnapshot.size}개 - ${logSnapshot.empty ? '❌' : '✅'}`);
+                
+                alert('📋 데이터 검증 결과:\n\n' + validationResults.join('\n'));
+                
+            } catch (error) {
+                alert('❌ 데이터 검증 실패: ' + error.message);
+                console.error('데이터 검증 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 테스트 데이터 삭제 확인
+        window.confirmClearTestData = function() {
+            if (confirm('⚠️ 주의: 모든 테스트 데이터가 삭제됩니다.\n\n이 작업은 되돌릴 수 없습니다.\n\n정말 삭제하시겠습니까?')) {
+                if (confirm('정말로 확실합니까? 모든 컬렉션의 데이터가 삭제됩니다!')) {
+                    clearTestData();
+                }
+            }
+        }
+        
+        // 테스트 데이터 삭제
+        window.clearTestData = async function() {
+            showLoading('테스트 데이터 삭제 중...');
+            
+            try {
+                // Firebase에서는 클라이언트에서 대량 삭제가 제한되므로
+                // 실제로는 Firebase Console이나 서버 사이드에서 삭제해야 함
+                alert('⚠️ 실제 데이터 삭제는 Firebase Console에서 수행해주세요.\n\n보안상 클라이언트에서는 대량 삭제가 제한됩니다.');
+                
+            } catch (error) {
+                alert('❌ 테스트 데이터 삭제 실패: ' + error.message);
+                console.error('테스트 데이터 삭제 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 시스템 로그 로드
+        window.loadSystemLogs = async function() {
+            showLoading('시스템 로그 로딩 중...');
+            const logsDisplay = document.getElementById('systemLogs');
+            
+            try {
+                const logsQuery = query(
+                    collection(db, 'system_logs'), 
+                    orderBy('timestamp', 'desc'), 
+                    limit(10)
+                );
+                const logsSnapshot = await getDocs(logsQuery);
+                
+                if (logsSnapshot.empty) {
+                    logsDisplay.textContent = '시스템 로그가 없습니다.';
+                    return;
+                }
+                
+                let logsText = '';
+                logsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp ? data.timestamp.toDate().toLocaleString() : '시간 정보 없음';
+                    logsText += `[${timestamp}] ${data.action} - ${data.details?.message || '세부 정보 없음'}\n`;
+                });
+                
+                logsDisplay.textContent = logsText || '로그 데이터를 읽을 수 없습니다.';
+                
+            } catch (error) {
+                logsDisplay.textContent = '❌ 시스템 로그 로딩 실패: ' + error.message;
+                console.error('시스템 로그 로딩 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 로그 내보내기
+        window.exportLogs = async function() {
+            showLoading('로그 내보내기 중...');
+            
+            try {
+                const logsQuery = query(collection(db, 'system_logs'), orderBy('timestamp', 'desc'));
+                const logsSnapshot = await getDocs(logsQuery);
+                
+                if (logsSnapshot.empty) {
+                    alert('내보낼 로그가 없습니다.');
+                    return;
+                }
+                
+                let csvContent = 'Timestamp,Action,User ID,Target Collection,Details\n';
+                
+                logsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp ? data.timestamp.toDate().toISOString() : '';
+                    const details = data.details ? JSON.stringify(data.details).replace(/"/g, '""') : '';
+                    
+                    csvContent += `"${timestamp}","${data.action}","${data.userId}","${data.targetCollection || ''}","${details}"\n`;
+                });
+                
+                // CSV 파일 다운로드
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `system_logs_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                alert('✅ 로그 파일이 다운로드되었습니다.');
+                
+            } catch (error) {
+                alert('❌ 로그 내보내기 실패: ' + error.message);
+                console.error('로그 내보내기 실패:', error);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // ===========================================
+        // 페이지 로드 완료 시 초기화
+        // ===========================================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 DB 관리자 페이지 로드 완료');
+            
+            // 초기 상태 확인
+            setTimeout(() => {
+                checkDatabaseStatus();
+                updateCollectionStats();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
