@@ -39,6 +39,105 @@ export class SecurityUtils {
     }
     
     /**
+     * DOMPurify를 사용한 HTML 정제 (XSS 방어)
+     * @param {string} dirty - 정제할 HTML 문자열
+     * @param {Object} config - DOMPurify 설정 옵션
+     * @returns {string} 정제된 HTML 문자열
+     */
+    static sanitizeHtml(dirty, config = {}) {
+        if (typeof dirty !== 'string') return '';
+        
+        // DOMPurify가 로드되지 않은 경우 기본 이스케이프 사용
+        if (typeof DOMPurify === 'undefined') {
+            console.warn('⚠️ DOMPurify가 로드되지 않음. 기본 이스케이프 사용');
+            return this.escapeHtml(dirty);
+        }
+        
+        // 기본 DOMPurify 설정
+        const defaultConfig = {
+            ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'span'],
+            ALLOWED_ATTR: ['class'],
+            FORBID_TAGS: ['script', 'object', 'embed', 'style', 'link'],
+            FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'style'],
+            ...config
+        };
+        
+        try {
+            return DOMPurify.sanitize(dirty, defaultConfig);
+        } catch (error) {
+            console.error('❌ DOMPurify 정제 실패:', error);
+            return this.escapeHtml(dirty); // 실패 시 기본 이스케이프 사용
+        }
+    }
+    
+    /**
+     * 안전한 innerHTML 설정 (XSS 방어)
+     * @param {HTMLElement} element - 대상 요소
+     * @param {string} content - 설정할 내용
+     * @param {Object} config - 정제 설정
+     */
+    static safeSetInnerHTML(element, content, config = {}) {
+        if (!element || typeof content !== 'string') {
+            console.warn('⚠️ safeSetInnerHTML: 유효하지 않은 매개변수');
+            return;
+        }
+        
+        const sanitizedContent = this.sanitizeHtml(content, config);
+        element.innerHTML = sanitizedContent;
+        
+        // 보안 로그
+        if (content !== sanitizedContent) {
+            console.log('🔒 XSS 방어: 콘텐츠가 정제되었습니다');
+        }
+    }
+    
+    /**
+     * 안전한 textContent 설정 (완전한 XSS 방어)
+     * @param {HTMLElement} element - 대상 요소
+     * @param {string} content - 설정할 텍스트
+     */
+    static safeSetTextContent(element, content) {
+        if (!element) {
+            console.warn('⚠️ safeSetTextContent: 유효하지 않은 요소');
+            return;
+        }
+        
+        element.textContent = typeof content === 'string' ? content : String(content);
+    }
+    
+    /**
+     * URL 검증 및 정제 (XSS 방어)
+     * @param {string} url - 검증할 URL
+     * @param {Array} allowedDomains - 허용된 도메인 목록
+     * @returns {string|null} 안전한 URL 또는 null
+     */
+    static sanitizeUrl(url, allowedDomains = []) {
+        if (typeof url !== 'string') return null;
+        
+        try {
+            const urlObj = new URL(url);
+            
+            // 위험한 프로토콜 차단
+            const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:'];
+            if (dangerousProtocols.includes(urlObj.protocol)) {
+                console.warn('🚫 위험한 프로토콜 차단:', urlObj.protocol);
+                return null;
+            }
+            
+            // 허용된 도메인 확인 (설정된 경우)
+            if (allowedDomains.length > 0 && !allowedDomains.includes(urlObj.hostname)) {
+                console.warn('🚫 허용되지 않은 도메인:', urlObj.hostname);
+                return null;
+            }
+            
+            return urlObj.href;
+        } catch (error) {
+            console.warn('⚠️ URL 파싱 실패:', error.message);
+            return null;
+        }
+    }
+    
+    /**
      * HTML 태그 제거 (추가 XSS 방어)
      * @param {string} str - 정제할 문자열
      * @returns {string} 태그가 제거된 문자열
