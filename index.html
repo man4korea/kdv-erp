@@ -423,6 +423,21 @@
     </script>
     
     <!-- 대시보드 JavaScript 모듈 -->
+    <!-- Firebase 로드 실패시 대체 인증 체크 -->
+    <script>
+        // Firebase 모듈 로드 실패시 백업 인증 체크
+        let firebaseLoadTimeout = setTimeout(() => {
+            console.warn('⚠️ Firebase 모듈 로드 시간 초과 - 로그인 페이지로 이동');
+            // Firebase 인증을 확인할 수 없으므로 로그인 페이지로 이동
+            window.location.href = 'login.html';
+        }, 3000); // 3초 대기
+        
+        // Firebase 모듈이 성공적으로 로드되면 타이머 해제
+        window.addEventListener('firebaseReady', () => {
+            console.log('✅ Firebase 모듈 로드 완료');
+            clearTimeout(firebaseLoadTimeout);
+        });
+    </script>
     <script type="module" src="./js/dashboard.js?v=1.10"></script>
 </body>
 </html>

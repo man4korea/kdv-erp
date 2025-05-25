@@ -96,6 +96,9 @@ async function initializeDashboard(firebaseUser) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 메인 대시보드 페이지 로드');
     
+    // Firebase 모듈 로드 완료 알림 (백업 타이머 해제용)
+    window.dispatchEvent(new CustomEvent('firebaseReady'));
+    
     // Firebase 인증 체크 시작
     initializeAuthCheck();
 });
