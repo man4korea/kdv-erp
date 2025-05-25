@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>햄버거 버튼 테스트</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        /* 디버깅용 추가 스타일 */
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .debug-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9999;
+        }
+        .test-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- 디버그 정보 -->
+    <div class="debug-info" id="debugInfo">
+        <div>사이드바 상태: <span id="sidebarStatus">닫힘</span></div>
+        <div>화면 크기: <span id="screenSize"></span></div>
+        <div>UI 컨트롤러: <span id="uiStatus">로딩중...</span></div>
+    </div>
+
+    <!-- 사이드바 오버레이 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    <!-- 사이드바 -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1 class="logo text-primary">CorpEasy</h1>
+            <button class="btn btn-icon" id="sidebarCloseBtn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="active">
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>대시보드</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="menu-item">
+                        <i class="fas fa-users"></i>
+                        <span>인사관리</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- 메인 헤더 -->
+    <header class="main-header">
+        <div class="header-left">
+            <button class="hamburger-btn" id="hamburgerBtn">
+                <div class="hamburger-icon">
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                    <div class="hamburger-line"></div>
+                </div>
+            </button>
+        </div>
+        
+        <div class="header-center">
+            <a href="#" class="logo">CorpEasy</a>
+        </div>
+        
+        <div class="header-right">
+            <div class="header-icon">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content" id="mainContent">
+        <div style="padding: 100px 20px;">
+            <h1>햄버거 버튼 테스트</h1>
+            <p>왼쪽 상단의 햄버거 버튼을 클릭해보세요.</p>
+        </div>
+    </main>
+
+    <!-- 테스트 버튼 -->
+    <button class="test-btn" onclick="testToggle()">수동 토글</button>
+
+    <!-- 스크립트 -->
+    <script>
+        // 간단한 테스트용 스크립트
+        console.log('🧪 햄버거 버튼 테스트 시작');
+
+        // 디버그 정보 업데이트
+        function updateDebugInfo() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarStatus = document.getElementById('sidebarStatus');
+            const screenSize = document.getElementById('screenSize');
+            const uiStatus = document.getElementById('uiStatus');
+
+            sidebarStatus.textContent = sidebar.classList.contains('active') ? '열림' : '닫힘';
+            screenSize.textContent = `${window.innerWidth}x${window.innerHeight}`;
+            uiStatus.textContent = window.mainUIController ? '로드됨' : '없음';
+        }
+
+        // 수동 토글 테스트
+        function testToggle() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const hamburger = document.getElementById('hamburgerBtn');
+
+            if (sidebar.classList.contains('active')) {
+                // 닫기
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+                hamburger.classList.remove('active');
+                console.log('🔴 사이드바 닫힘 (수동)');
+            } else {
+                // 열기
+                sidebar.classList.add('active');
+                overlay.classList.add('active');
+                hamburger.classList.add('active');
+                console.log('🟢 사이드바 열림 (수동)');
+            }
+            updateDebugInfo();
+        }
+
+        // 햄버거 버튼 이벤트 (직접 연결)
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM 로드 완료');
+            
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            if (hamburgerBtn) {
+                hamburgerBtn.addEventListener('click', function() {
+                    console.log('🍔 햄버거 버튼 클릭됨');
+                    testToggle();
+                });
+                console.log('✅ 햄버거 버튼 이벤트 연결 완료');
+            } else {
+                console.error('❌ 햄버거 버튼을 찾을 수 없음');
+            }
+
+            if (sidebarCloseBtn) {
+                sidebarCloseBtn.addEventListener('click', function() {
+                    console.log('❌ 사이드바 닫기 버튼 클릭됨');
+                    testToggle();
+                });
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    console.log('🔄 오버레이 클릭됨');
+                    testToggle();
+                });
+            }
+
+            // 디버그 정보 초기 업데이트
+            updateDebugInfo();
+            
+            // 주기적 업데이트
+            setInterval(updateDebugInfo, 1000);
+        });
+
+        // 리사이즈 이벤트
+        window.addEventListener('resize', updateDebugInfo);
+    </script>
+
+    <!-- UI 컨트롤러 로드 (선택사항) -->
+    <script type="module">
+        try {
+            const { MainUIController } = await import('./js/ui-controller.js');
+            window.mainUIController = new MainUIController();
+            console.log('✅ MainUIController 로드 성공');
+            document.getElementById('uiStatus').textContent = '로드됨';
+        } catch (error) {
+            console.error('❌ MainUIController 로드 실패:', error);
+            document.getElementById('uiStatus').textContent = '실패: ' + error.message;
+        }
+    </script>
+</body>
+</html>

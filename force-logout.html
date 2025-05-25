@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>강제 로그아웃</title>
+</head>
+<body>
+    <h1>🚪 강제 로그아웃 진행 중...</h1>
+    <p>모든 인증 정보를 삭제하고 로그인 페이지로 이동합니다.</p>
+    
+    <script type="module">
+        async function forceLogout() {
+            try {
+                // 1. Firebase에서 로그아웃
+                const { auth } = await import('./js/firebase-config.js');
+                const { signOut } = await import('https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js');
+                
+                console.log('🔥 Firebase 로그아웃 시도...');
+                await signOut(auth);
+                console.log('✅ Firebase 로그아웃 완료');
+                
+            } catch (error) {
+                console.log('⚠️ Firebase 로그아웃 오류 (무시됨):', error.message);
+            }
+            
+            // 2. 로컬 저장소 정리
+            console.log('🧹 로컬 저장소 정리...');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // 3. 쿠키 정리 (Firebase 관련)
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            console.log('✅ 강제 로그아웃 완료');
+            
+            // 4. 로그인 페이지로 이동
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1000);
+        }
+        
+        // 페이지 로드 즉시 실행
+        forceLogout();
+    </script>
+</body>
+</html>

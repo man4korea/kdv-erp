@@ -202,6 +202,33 @@ employee-data-*.json
 employee-export-*.csv
 temp-employee-data/
 
+# Claude Desktop App files
+*.exe
+*.dll
+*.pak
+*.dat
+*.bin
+*.json
+*.ico
+*.png
+*.asar
+locales/
+resources/
+Squirrel-*
+snapshot_blob.bin
+v8_context_snapshot.bin
+vk_swiftshader*
+vulkan-1.dll
+chrome_*_percent.pak
+d3dcompiler_*.dll
+ffmpeg.dll
+icudtl.dat
+libEGL.dll
+libGLESv2.dll
+squirrel.exe
+*.log
+debug.log
+LICENSE
 # User uploaded files
 uploads/
 user-files/

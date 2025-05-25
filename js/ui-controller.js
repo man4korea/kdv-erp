@@ -1,7 +1,7 @@
 /*
 📁 js/ui-controller.js
 KDV 시스템 - UI 컨트롤러 통합 모듈 (모듈화 버전)
-Create at 250525_2200 Ver2.00
+Create at 250525_2200 Ver2.01
 */
 
 import { UICoreController } from './ui-core-controller.js';
@@ -13,13 +13,16 @@ import { UIInteractionsMixin } from './ui-interactions.js';
  */
 export class MainUIController {
     constructor() {
-        // 핵심 UI 제어 기능 초기화
-        Object.assign(this, new UICoreController());
+        // UICoreController 인스턴스 생성
+        this.coreController = new UICoreController();
+        
+        // 핵심 컨트롤러의 모든 속성과 메서드를 현재 인스턴스에 복사
+        Object.assign(this, this.coreController);
         
         // 포커스 트랩 핸들러 초기화
         this.trapFocusHandler = null;
         
-        // 초기화 실행
+        // 초기화 실행 (이제 this.init()이 올바르게 작동)
         this.init();
         
         console.log('🎨 MainUIController (통합 버전) 초기화 완료');
@@ -34,7 +37,9 @@ export class MainUIController {
         UICoreController.prototype.openSidebar.call(this, animate);
         
         // 포커스 트랩 설정 (상호작용 기능)
-        UIInteractionsMixin.prototype.setupFocusTrap.call(this);
+        if (UIInteractionsMixin.prototype.setupFocusTrap) {
+            UIInteractionsMixin.prototype.setupFocusTrap.call(this);
+        }
     }
     
     /**
@@ -43,7 +48,9 @@ export class MainUIController {
      */
     closeSidebar(animate = true) {
         // 포커스 트랩 해제 (상호작용 기능)
-        UIInteractionsMixin.prototype.removeFocusTrap.call(this);
+        if (UIInteractionsMixin.prototype.removeFocusTrap) {
+            UIInteractionsMixin.prototype.removeFocusTrap.call(this);
+        }
         
         // 핵심 사이드바 닫기 로직
         UICoreController.prototype.closeSidebar.call(this, animate);
@@ -51,7 +58,9 @@ export class MainUIController {
 }
 
 // 상호작용 믹스인 메서드들을 MainUIController 프로토타입에 추가
-Object.assign(MainUIController.prototype, UIInteractionsMixin.prototype);
+if (UIInteractionsMixin && UIInteractionsMixin.prototype) {
+    Object.assign(MainUIController.prototype, UIInteractionsMixin.prototype);
+}
 
 // 전역 UI 컨트롤러 인스턴스 (기존 호환성 유지)
 let mainUIController = null;

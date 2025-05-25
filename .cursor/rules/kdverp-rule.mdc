@@ -1,0 +1,202 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+## Project Overview: 프로젝트의 간단한 설명 
+1. **웹사이트**: [http://kdverp.dothome.co.kr](mdc:http:/kdverp.dothome.co.kr)에서 운영될 KDV ERP 시스템
+
+## Workspace Root: 프로젝트의 루트 디렉토리 경로 
+1. **프로젝트 루트**: `C:\APP\html`
+2. **데이터 흐름**: C:\APP\html → Z:\html → FTP → [http://kdverp.dothome.co.kr](mdc:http:/kdverp.dothome.co.kr)
+
+## Development Focus: 개발의 주요 목표 (예: 테스트, 오류 수정, 코드 완성도 향상)
+1. **개발 방향**: 기존 규모 확장 금지, **테스트 및 오류 수정, 코드 완성도 향상**에 집중
+
+## File Operations: 파일 읽기, 쓰기, 편집 (edit_file_lines dryRun 포함), 대용량 파일 처리 등에 대한 지침
+1. 파일 헤더 (json 제외): `📁 [경로]/[파일명]` + 프로그램 정보 + `Create at YYMMDD_hhmm Ver#.##`
+2. 각 파일을 200-300줄 이하로 유지, 파일의 줄수가 200줄 이상이 넘어가고 난 후 300줄 이상이 될 경우 파일을 분리하여 작업할 것
+3. **로그 관리**: `C:\app\html\logs` 폴더에 실행 오류 저장
+4. **동의 절차**: 간단한 수정, 새 파일 생성시에만 동의 요청
+5. **작업 진행**: 특별 지시 없으면 한 번에 하나씩, 특별 지시시 예외
+6. **새 프로젝트/큰 변경**: TaskPlanner 작동, 프로젝트 초기화 제안
+7. **새 기능/버그 수정**: TaskPlanner로 "plan task <설명>" 형식
+8. **실행 준비**: TaskExecutor로 "execute task <ID/이름>"
+9. **연속 실행 모드**: 여러 작업 자동 처리시 TaskExecutor로 "continuous mode"요청
+10. **연속 실행 모드 사용 여부** 사전 확인
+11. **작업 완료**: TaskExecutor로 verify_task → complete_task 자동 진행
+12. "필요한 파일만 읽어서 효율적 작업" -> read_file, list_dir, codebase_search, file_search 등을 활용하여 파일 내용을 파악
+
+## System Commands: 터미널 명령어 사용 시 유의사항 (예: Python은 py 사용)
+1.Python은 py 사용
+2.사용환경은 windows 환경 : && 명령어 사용시 에러 발생하니 주의 
+
+## Consent Required: 사용자 동의가 필요한 작업 목록 (예: Shrimp 작업 삭제/초기화)
+1.Shrimp 작업 삭제시 동의 필요
+2.env 파일 삭제 및 수정 금지
+3.지시하지 않은 파일 수정 및 삭제 금지
+
+## Shrimp Task Manager
+
+### Shrimp Task Manager 사용법 (13가지 기능)
+
+1. **init_project_rules**: 프로젝트별 코딩 표준과 규칙 생성/업데이트
+
+2. **plan_task**: 사용자 요구사항 바탕으로 작업 계획 수립
+3. **analyze_task**: 작업/요구사항 깊이 있게 분석, 기술적 구현 가능성 평가4. **process_thought**: 복잡한 문제의 단계적 사고를 위한 추론 도구
+5. **reflect_task**: 분석 결과/해결책에 대한 반성적 평가
+6. **split_tasks**: 큰 작업을 하위 작업으로 분할 (append/overwrite/selective/clearAllTasks)
+7. **list_tasks**: 모든 작업 목록 요약 표시
+8. **query_task**: 키워드/ID로 특정 작업 검색
+9. **get_task_detail**: 특정 작업의 상세 정보 조회
+10. **delete_task**: 미완료 작업 삭제 (완료된 작업은 삭제 불가)
+11. **execute_task**: 특정 작업 실행
+12. **verify_task**: 완료된 작업의 요구사항 충족 여부 검증
+13. **complete_task**: 작업을 완료 상태로 표시
+
+### Shrimp Task Manager 모드
+
+**TaskPlanner 모드** ("계획 세워줘"):
+
+- plan_task 도구만 사용하여 작업 목록 체계적 작성
+- 1-2일 완료 단위로 최대 10개 이하 분할
+- 명확한 완료 기준과 의존 관계 명시
+- 코드 실행/수정/터미널 명령 수행 금지
+
+**TaskExecutor 모드** ("실행해줘"):
+
+- execute_task, verify_task, complete_task 도구 사용
+- 이미 계획된 작업 실행 및 검증
+- 새로운 작업 계획/분석 단계 수행 금지
+- 결과만 간결히 보고
+
+## Git Workflow: Git add, commit, push (APP\git-mcp-kdv-erp.prompt.md 참조) 등 버전 관리 관련 지침
+1. git 작업요청시 git 작업 수행 후 Z:\html 동일 위치에 파일 복사 작업 수행
+2. 대상 GitHub 저장소: `man4korea/kdv-erp`
+
+### 특정 파일 커밋 예시
+{
+  "tool": "git",
+  "parameters": {
+    "subtool": "RunCommand",
+    "path": "C:/app/html",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "git add index.html && " +
+      "git commit -m \"feat: update landing page\""
+    ]
+  }
+}
+
+### 전체 코드 push 
+
+{
+  "tool": "git",
+  "parameters": {
+    "subtool": "RunCommand",
+    "path": "C:/app/html",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "git push -u origin main"
+    ]
+  }
+}
+
+### 테스트 실행 후 자동 커밋 
+{
+  "tool": "git",
+  "parameters": {
+    "subtool": "RunCommand",
+    "path": "C:/app/html",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "npm test && " +
+      "git add . && " +
+      "git commit -m \"test: commit after successful test\""
+    ]
+  }
+}
+
+###  파일 생성 및 커밋 예시 (.env 등)
+
+{
+  "tool": "git",
+  "parameters": {
+    "subtool": "RunCommand",
+    "path": "C:/app/html",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "echo API_KEY=xxx > .env.example && " +
+      "git add .env.example && " +
+      "git commit -m \"chore: add env example file\""
+    ]
+  }
+}
+
+### 파일 삭제 및 커밋 예시
+
+{
+  "tool": "git",
+  "parameters": {
+    "subtool": "RunCommand",
+    "path": "C:/app/html",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "git rm debug.log && " +
+      "git commit -m \"build: remove debug log file\""
+    ]
+  }
+}
+
+### Git 내 특정 파일 내용 읽기
+{
+  "tool": "git",
+  "parameters": {
+    "subtool": "RunCommand",
+    "path": "C:/app/html",
+    "command": "cmd",
+    "args": [
+      "/c",
+      "git show HEAD:index.html"
+    ]
+  }
+}
+
+## Playwright 사용법
+
+### 페이지 이동 및 스크린샷
+playwright_navigate({ "url": "https://example.com" })
+playwright_screenshot({ "name": "homepage", "fullPage": true })
+
+### 요소 조작
+playwright_click({ "selector": "#login-button" })
+playwright_click_text({ "text": "로그인" })
+playwright_fill({ "selector": "input[name='email']", "value": "user@example.com" })
+playwright_select({ "selector": "select[name='country']", "value": "KR" })
+
+### JavaScript 실행
+playwright_evaluate({ "script": "document.title" })
+playwright_evaluate({ "script": "window.location.href" })
+playwright_evaluate({ "script": "localStorage.getItem('token')" })
+
+### 키보드/마우스 조작
+playwright_press_key({ "key": "Enter", "selector": "input[name='search']" })
+playwright_hover({ "selector": ".menu-item" })
+playwright_drag({ "sourceSelector": ".item", "targetSelector": ".drop-zone" })
+
+### HTTP 요청
+playwright_get({ "url": "https://api.example.com/data" })
+playwright_post({ 
+  "url": "https://api.example.com/users", 
+  "value": "{\"name\":\"홍길동\", \"email\":\"hong@example.com\"}" 
+})
+
+### 페이지 내용 가져오기
+playwright_get_visible_text()
+playwright_get_visible_html()
+playwright_console_logs({ "type": "error", "limit": 10 })

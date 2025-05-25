@@ -1,7 +1,7 @@
 /*
 📁 js/auth-validators.js
 KDV 시스템 - 인증 검증 모듈
-Create at 250525_1900 Ver1.00
+Create at 250525_1900 Ver1.01
 */
 
 /**
@@ -25,15 +25,20 @@ export function checkUserPermission(userProfile, requiredLevel) {
         return true;
     }
     
-    // 보안 등급별 권한 확인
-    const levelHierarchy = {
-        '1급': 3,
-        '2급': 2,
-        '일반': 1
-    };
+    // 보안 등급별 권한 확인 - 보안 강화
+    const levelHierarchy = new Map([
+        ['1급', 3],
+        ['2급', 2],
+        ['일반', 1]
+    ]);
     
-    const userLevelValue = levelHierarchy[userLevel] || 0;
-    const requiredLevelValue = levelHierarchy[requiredLevel] || 0;
+    // 허용된 보안 등급 확인
+    const allowedLevels = ['1급', '2급', '일반'];
+    
+    const userLevelValue = allowedLevels.includes(userLevel) ? 
+        levelHierarchy.get(userLevel) : 0;
+    const requiredLevelValue = allowedLevels.includes(requiredLevel) ? 
+        levelHierarchy.get(requiredLevel) : 0;
     
     const hasPermission = userLevelValue >= requiredLevelValue;
     
@@ -116,33 +121,42 @@ export function checkFeaturePermission(currentUser, feature) {
         return true;
     }
     
-    // 기능별 권한 매트릭스
-    const featurePermissions = {
-        // 인사관리 기능들
-        'employee_view': ['일반', '2급', '1급'],
-        'employee_edit': ['2급', '1급'],
-        'employee_delete': ['1급'],
+    // 기능별 보안 등급 권한 정의 - 보안 강화
+    const featurePermissions = new Map([
+        // 기본 접근
+        ['dashboard', ['일반', '2급', '1급']],
+        ['profile', ['일반', '2급', '1급']],
+        
+        // 직원 관리
+        ['employee_view', ['2급', '1급']],
+        ['employee_edit', ['1급']],
+        ['employee_create', ['1급']],
+        ['employee_delete', ['1급']],
         
         // 급여 관리
-        'salary_view': ['2급', '1급'], 
-        'salary_edit': ['1급'],
+        ['salary_view', ['2급', '1급']], 
+        ['salary_edit', ['1급']],
         
         // 시스템 관리
-        'system_config': ['1급'],
-        'user_management': ['1급'],
+        ['system_config', ['1급']],
+        ['user_management', ['1급']],
         
         // 보고서 기능
-        'report_basic': ['일반', '2급', '1급'],
-        'report_advanced': ['2급', '1급'],
-        'report_confidential': ['1급']
-    };
+        ['report_basic', ['일반', '2급', '1급']],
+        ['report_advanced', ['2급', '1급']],
+        ['report_confidential', ['1급']]
+    ]);
     
-    const allowedLevels = featurePermissions[feature];
-    if (!allowedLevels) {
+    // 허용된 기능 목록 확인
+    const allowedFeatures = Array.from(featurePermissions.keys());
+    
+    // 기능이 허용된 목록에 있는지 확인
+    if (!allowedFeatures.includes(feature)) {
         console.warn('⚠️ 알 수 없는 기능:', feature);
         return false;
     }
     
+    const allowedLevels = featurePermissions.get(feature);
     const userLevel = currentUser.profile.securityLevel;
     const hasPermission = allowedLevels.includes(userLevel);
     
@@ -177,11 +191,6 @@ export function checkDataAccess(currentUser, dataRecord) {
         dataRecord.assignedTo === currentUser.user.uid) {
         return true;
     }
-    
-    // 부서별 접근 권한 (추후 구현 예정)
-    // if (dataRecord.department === currentUser.profile.department) {
-    //     return true;
-    // }
     
     // 보안 등급에 따른 접근 권한
     const dataSecurityLevel = dataRecord.securityLevel || '일반';
