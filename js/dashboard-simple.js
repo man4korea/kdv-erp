@@ -1,6 +1,6 @@
 // 📁 js/dashboard-simple.js
 // KDV 시스템 - 대시보드 단순화 스크립트 (CDN 호환)
-// Create at 250526_1530 Ver1.00
+// Create at 250526_1530 Ver1.01
 
 // CDN 방식으로 변경 - import 문 제거
 
@@ -34,43 +34,77 @@ async function checkAuthStatus() {
     try {
         console.log('🔍 인증 상태 확인 중...');
         
-        // 로컬 스토리지에서 사용자 정보 확인
+        // 세션 스토리지 먼저 확인 (우선순위)
+        const sessionData = sessionStorage.getItem('kdv_user_session');
+        if (sessionData) {
+            currentUser = JSON.parse(sessionData);
+            console.log('⏱️ 세션 데이터 확인:', currentUser.email);
+            isAuthChecked = true;
+            console.log('✅ 세션 기반 인증 확인 완료:', currentUser.email);
+            return;
+        }
+        
+        // 로컬 스토리지에서 기억된 로그인 확인 (두 번째 우선순위)
         const rememberedLogin = localStorage.getItem('kdv_remember_login');
         const userData = localStorage.getItem('kdv_user_data');
-        const sessionData = sessionStorage.getItem('kdv_user_session');
         
         if (rememberedLogin === 'true' && userData) {
             currentUser = JSON.parse(userData);
             console.log('💾 저장된 로그인 정보 확인:', currentUser.email);
-        } else if (sessionData) {
-            currentUser = JSON.parse(sessionData);
-            console.log('⏱️ 세션 데이터 확인:', currentUser.email);
-        }
-        
-        if (!currentUser) {
-            console.log('❌ 로그인 정보 없음 - 로그인 페이지로 이동');
-            window.location.href = 'index.html';
+            isAuthChecked = true;
+            console.log('✅ 로컬 스토리지 기반 인증 확인 완료:', currentUser.email);
             return;
         }
         
-        // Firebase 인증 상태 확인 (옵션)
+        // Firebase 인증 상태 확인 (최종 확인)
         if (typeof firebase !== 'undefined' && firebase.auth) {
             const firebaseUser = firebase.auth().currentUser;
-            if (!firebaseUser) {
-                console.log('⚠️ Firebase 세션 만료 - 재로그인 필요');
-                clearUserData();
-                window.location.href = 'index.html';
+            if (firebaseUser) {
+                // Firebase 사용자가 있으면 임시 세션 생성
+                currentUser = {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    emailVerified: firebaseUser.emailVerified,
+                    displayName: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+                    lastLoginTime: new Date().toISOString()
+                };
+                
+                // 세션에 저장
+                sessionStorage.setItem('kdv_user_session', JSON.stringify(currentUser));
+                
+                console.log('🔥 Firebase 사용자 확인:', currentUser.email);
+                isAuthChecked = true;
+                console.log('✅ Firebase 기반 인증 확인 완료:', currentUser.email);
                 return;
             }
         }
         
-        isAuthChecked = true;
-        console.log('✅ 인증 확인 완료:', currentUser.email);
+        // 모든 인증 방법 실패
+        console.log('❌ 로그인 정보 없음 - 로그인 페이지로 이동');
+        console.log('🔍 디버그 정보:');
+        console.log('- sessionData:', !!sessionData);
+        console.log('- rememberedLogin:', rememberedLogin);
+        console.log('- userData:', !!userData);
+        console.log('- firebase.auth():', typeof firebase !== 'undefined' && !!firebase.auth);
+        
+        // 잠시 대기 후 리다이렉트 (디버깅을 위해)
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
+        return;
         
     } catch (error) {
         console.error('❌ 인증 확인 실패:', error);
-        clearUserData();
-        window.location.href = 'index.html';
+        console.log('🔍 오류 상세:', {
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // 오류 발생 시에도 잠시 대기
+        setTimeout(() => {
+            clearUserData();
+            window.location.href = 'index.html';
+        }, 3000);
     }
 }
 
