@@ -12,7 +12,7 @@ alwaysApply: false
 
 ## Development Focus: 개발의 주요 목표 (예: 테스트, 오류 수정, 코드 완성도 향상)
 1. **개발 방향**: 기존 규모 확장 금지, **테스트 및 오류 수정, 코드 완성도 향상**에 집중
-
+2. **개발에서 최신 라이브러리 활용** : context7의 최신라이브러리를 활용한다.
 ## File Operations: 파일 읽기, 쓰기, 편집 (edit_file_lines dryRun 포함), 대용량 파일 처리 등에 대한 지침
 1. 파일 헤더 (json 제외): `📁 [경로]/[파일명]` + 프로그램 정보 + `Create at YYMMDD_hhmm Ver#.##`
 2. 각 파일을 200-300줄 이하로 유지, 파일의 줄수가 200줄 이상이 넘어가고 난 후 300줄 이상이 될 경우 파일을 분리하여 작업할 것
@@ -30,6 +30,7 @@ alwaysApply: false
 ## System Commands: 터미널 명령어 사용 시 유의사항 (예: Python은 py 사용)
 1.Python은 py 사용
 2.사용환경은 windows 환경 : && 명령어 사용시 에러 발생하니 주의 
+3. 수정 및 생성이 된 파일이 사용자가 숭인하는 경우 z:\html의 동일 폴더에 해당 파일들을 복사를 한다.
 
 ## Consent Required: 사용자 동의가 필요한 작업 목록 (예: Shrimp 작업 삭제/초기화)
 1.Shrimp 작업 삭제시 동의 필요
