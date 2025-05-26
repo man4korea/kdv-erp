@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 pages/admin/admin-panel.html
+     KDV ERP 시스템 - 관리자 패널
+     Create at 250526_1800 Ver1.00 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 패널 - KDV ERP 시스템</title>
+    <!-- DOMPurify for XSS Protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.7/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="../../css/styles.css?v=1.15">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<style>
+/* 관리자 패널 전용 스타일 */
+.admin-header {
+    background: linear-gradient(135deg, var(--primary), #0056b3);
+    color: white;
+    padding: var(--spacing-6);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    margin-bottom: var(--spacing-6);
+    box-shadow: var(--shadow-lg);
+}
+
+.admin-header h1 {
+    font-size: var(--text-3xl);
+    margin-bottom: var(--spacing-2);
+    font-weight: 700;
+}
+
+.admin-header p {
+    font-size: var(--text-lg);
+    opacity: 0.9;
+    margin: 0;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-6);
+    margin-bottom: var(--spacing-6);
+}
+
+.admin-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-6);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-primary);
+    transition: all var(--transition-speed);
+}
+
+.admin-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.admin-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+}
+
+.admin-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xl);
+}
+
+.admin-card-title {
+    font-size: var(--text-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.admin-card-description {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--spacing-4);
+    line-height: 1.5;
+}
+
+.admin-stats {
+    display: flex;
+    gap: var(--spacing-4);
+    margin-bottom: var(--spacing-4);
+}
+
+.admin-stat {
+    flex: 1;
+    text-align: center;
+    padding: var(--spacing-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+}
+
+.admin-stat-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: var(--spacing-1);
+}
+
+.admin-stat-label {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 500;
+}
+
+.admin-actions {
+    display: flex;
+    gap: var(--spacing-2);
+    flex-wrap: wrap;
+}
+
+.admin-btn {
+    padding: var(--spacing-2) var(--spacing-4);
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-1);
+}
+
+.admin-btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.admin-btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.admin-btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-primary);
+}
+
+.admin-btn-secondary:hover {
+    background: var(--bg-primary);
+    border-color: var(--primary);
+}
+
+.admin-btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.admin-btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.user-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-3);
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.user-list-item:last-child {
+    border-bottom: none;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-3);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-sm);
+    font-weight: 600;
+}
+
+.user-details h4 {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    margin: 0 0 2px 0;
+    color: var(--text-primary);
+}
+
+.user-details p {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.user-status {
+    padding: 2px var(--spacing-2);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: 500;
+}
+
+.user-status.active {
+    background: var(--bg-success);
+    color: var(--success);
+}
+
+.user-status.inactive {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.back-button {
+    position: fixed;
+    top: var(--spacing-4);
+    left: var(--spacing-4);
+    z-index: 100;
+    background: white;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-full);
+    padding: var(--spacing-2) var(--spacing-4);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    text-decoration: none;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-speed);
+}
+
+.back-button:hover {
+    background: var(--bg-secondary);
+    transform: translateY(-1px);
+}
+
+.warning-message {
+    background: var(--bg-warning);
+    color: var(--warning);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-6);
+    border-left: 4px solid var(--warning);
+}
+
+.warning-message .fas {
+    margin-right: var(--spacing-2);
+}
+
+/* 로딩 및 오류 상태 */
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-6);
+    color: var(--text-secondary);
+}
+
+.error-message {
+    background: var(--bg-danger);
+    color: var(--danger);
+    padding: var(--spacing-4);
+    border-radius: var(--radius-md);
+    text-align: center;
+    margin: var(--spacing-4) 0;
+}
+</style>
+<body>
+    <!-- 뒤로가기 버튼 -->
+    <a href="../../dashboard.html" class="back-button">
+        <i class="fas fa-arrow-left"></i>
+        대시보드로 돌아가기
+    </a>
+
+    <!-- 메인 컨테이너 -->
+    <div class="main-container">
+        <!-- 관리자 헤더 -->
+        <div class="admin-header">
+            <h1><i class="fas fa-shield-alt"></i> 관리자 패널</h1>
+            <p>시스템 관리 및 사용자 관리 기능</p>
+        </div>
+
+        <!-- 경고 메시지 -->
+        <div class="warning-message" id="accessWarning" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            관리자 권한이 필요한 페이지입니다. 접근 권한을 확인하고 있습니다...
+        </div>
+
+        <!-- 관리자 기능 그리드 -->
+        <div class="admin-grid" id="adminContent" style="display: none;">
+            <!-- 사용자 관리 -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="admin-card-title">사용자 관리</h3>
+                </div>
+                <p class="admin-card-description">
+                    등록된 사용자들의 계정 정보를 관리하고 권한을 설정할 수 있습니다.
+                </p>
+                <div class="admin-stats">
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" id="totalUsers">-</div>
+                        <div class="admin-stat-label">전체 사용자</div>
+                    </div>
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" id="activeUsers">-</div>
+                        <div class="admin-stat-label">활성 사용자</div>
+                    </div>
+                </div>
+                <div class="admin-actions">
+                    <button class="admin-btn admin-btn-primary" onclick="loadUserList()">
+                        <i class="fas fa-list"></i> 사용자 목록
+                    </button>
+                    <button class="admin-btn admin-btn-secondary" onclick="showComingSoon()">
+                        <i class="fas fa-user-plus"></i> 사용자 추가
+                    </button>
+                </div>
+            </div>
+
+            <!-- 시스템 설정 -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon green">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3 class="admin-card-title">시스템 설정</h3>
+                </div>
+                <p class="admin-card-description">
+                    시스템 전반의 설정을 관리하고 보안 정책을 설정할 수 있습니다.
+                </p>
+                <div class="admin-stats">
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" style="color: var(--success);">정상</div>
+                        <div class="admin-stat-label">시스템 상태</div>
+                    </div>
+                    <div class="admin-stat">
+                        <div class="admin-stat-value">v1.0</div>
+                        <div class="admin-stat-label">버전</div>
+                    </div>
+                </div>
+                <div class="admin-actions">
+                    <button class="admin-btn admin-btn-primary" onclick="showSystemInfo()">
+                        <i class="fas fa-info-circle"></i> 시스템 정보
+                    </button>
+                    <button class="admin-btn admin-btn-secondary" onclick="showComingSoon()">
+                        <i class="fas fa-shield-alt"></i> 보안 설정
+                    </button>
+                </div>
+            </div>
+
+            <!-- 데이터베이스 관리 -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon yellow">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3 class="admin-card-title">데이터베이스 관리</h3>
+                </div>
+                <p class="admin-card-description">
+                    Firebase Firestore 데이터베이스의 백업, 복원 및 관리 기능을 제공합니다.
+                </p>
+                <div class="admin-stats">
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" id="dbDocuments">-</div>
+                        <div class="admin-stat-label">문서 수</div>
+                    </div>
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" style="color: var(--success);">연결됨</div>
+                        <div class="admin-stat-label">연결 상태</div>
+                    </div>
+                </div>
+                <div class="admin-actions">
+                    <button class="admin-btn admin-btn-primary" onclick="checkDatabaseStatus()">
+                        <i class="fas fa-pulse"></i> 상태 확인
+                    </button>
+                    <button class="admin-btn admin-btn-secondary" onclick="showComingSoon()">
+                        <i class="fas fa-download"></i> 백업
+                    </button>
+                </div>
+            </div>
+
+            <!-- 로그 관리 -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon purple">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3 class="admin-card-title">로그 관리</h3>
+                </div>
+                <p class="admin-card-description">
+                    시스템 오류 로그와 사용자 활동 로그를 확인하고 관리할 수 있습니다.
+                </p>
+                <div class="admin-stats">
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" id="errorLogs">-</div>
+                        <div class="admin-stat-label">오류 로그</div>
+                    </div>
+                    <div class="admin-stat">
+                        <div class="admin-stat-value" id="accessLogs">-</div>
+                        <div class="admin-stat-label">접근 로그</div>
+                    </div>
+                </div>
+                <div class="admin-actions">
+                    <button class="admin-btn admin-btn-primary" onclick="showErrorLogs()">
+                        <i class="fas fa-exclamation-triangle"></i> 오류 로그
+                    </button>
+                    <button class="admin-btn admin-btn-secondary" onclick="showComingSoon()">
+                        <i class="fas fa-history"></i> 활동 로그
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 사용자 목록 모달 -->
+        <div id="userListModal" style="display: none;">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="admin-card-title">등록된 사용자 목록</h3>
+                </div>
+                <div id="userListContent">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <span style="margin-left: var(--spacing-2);">사용자 목록을 불러오는 중...</span>
+                    </div>
+                </div>
+                <div class="admin-actions" style="margin-top: var(--spacing-4);">
+                    <button class="admin-btn admin-btn-secondary" onclick="hideUserList()">
+                        <i class="fas fa-times"></i> 닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 시스템 정보 모달 -->
+        <div id="systemInfoModal" style="display: none;">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-icon green">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <h3 class="admin-card-title">시스템 정보</h3>
+                </div>
+                <div id="systemInfoContent">
+                    <!-- 시스템 정보가 여기에 표시됩니다 -->
+                </div>
+                <div class="admin-actions" style="margin-top: var(--spacing-4);">
+                    <button class="admin-btn admin-btn-secondary" onclick="hideSystemInfo()">
+                        <i class="fas fa-times"></i> 닫기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase 및 메인 스크립트 -->
+    <!-- Firebase SDK CDN 로드 -->
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
+    
+    <!-- 환경 변수 설정 -->
+    <script src="../../js/env-config.js"></script>
+    
+    <!-- Firebase 초기화 -->
+    <script>
+        // Firebase 설정 (환경 변수에서 가져오기)
+        const firebaseConfig = getFirebaseConfig();
+        
+        // Firebase 초기화
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log('🔥 Firebase 초기화 성공 - 환경 변수 사용');
+        } catch (error) {
+            console.error('❌ Firebase 초기화 실패:', error);
+        }
+    </script>
+
+    <!-- 관리자 패널 메인 스크립트 -->
+    <script src="../../js/admin-panel-main.js"></script>
+</body>
+</html>
