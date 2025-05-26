@@ -16,15 +16,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // 인증 상태 확인
     await checkAuthStatus();
-    
     // UI 초기화
     initializeDashboard();
-    
-    // 햄버거 메뉴 설정
-    setupHamburgerMenu();
-    
     // 로그아웃 버튼 설정
     setupLogoutButton();
+    
+    // 사이드바 커스텀 이벤트 리스너 (옵션)
+    setupSidebarEvents();
 });
 
 /**
@@ -195,54 +193,26 @@ function updateStatCard(cardId, value, change) {
 }
 
 /**
- * 햄버거 메뉴 설정
+ * 사이드바 커스텀 이벤트 리스너
  */
-function setupHamburgerMenu() {
-    const hamburgerButton = document.querySelector('.hamburger-btn'); // 올바른 선택자
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
-    const closeButton = document.querySelector('#sidebarCloseBtn');
-    
-    console.log('🍔 햄버거 메뉴 설정:', {
-        hamburgerButton: !!hamburgerButton,
-        sidebar: !!sidebar,
-        overlay: !!overlay,
-        closeButton: !!closeButton
+function setupSidebarEvents() {
+    // 사이드바 열기 이벤트
+    document.addEventListener('sidebar:open', function(event) {
+        console.log('🔓 사이드바 열림 이벤트 수신:', event.detail);
+        
+        // 사이드바가 열릴 때 추가 로직 (예: 다른 UI 요소 비활성화)
+        // 예시: document.body.classList.add('sidebar-open');
     });
     
-    // 햄버거 버튼 클릭 이벤트
-    if (hamburgerButton && sidebar) {
-        hamburgerButton.addEventListener('click', function() {
-            console.log('🍔 햄버거 버튼 클릭');
-            sidebar.classList.toggle('active');
-            if (overlay) {
-                overlay.classList.toggle('active');
-            }
-            console.log('📋 사이드바 상태:', sidebar.classList.contains('active'));
-        });
-    } else {
-        console.error('❌ 햄버거 버튼 또는 사이드바를 찾을 수 없습니다.');
-    }
+    // 사이드바 닫기 이벤트
+    document.addEventListener('sidebar:close', function(event) {
+        console.log('🔒 사이드바 닫힘 이벤트 수신:', event.detail);
+        
+        // 사이드바가 닫힘 때 추가 로직
+        // 예시: document.body.classList.remove('sidebar-open');
+    });
     
-    // 오버레이 클릭 이벤트 (사이드바 닫기)
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            console.log('📋 오버레이 클릭 - 사이드바 닫기');
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
-    }
-    
-    // 닫기 버튼 클릭 이벤트
-    if (closeButton) {
-        closeButton.addEventListener('click', function() {
-            console.log('❌ 닫기 버튼 클릭 - 사이드바 닫기');
-            sidebar.classList.remove('active');
-            if (overlay) {
-                overlay.classList.remove('active');
-            }
-        });
-    }
+    console.log('🎆 사이드바 이벤트 리스너 설정 완료');
 }
 
 /**
