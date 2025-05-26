@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 테스트</title>
+</head>
+<body>
+    <h1>Firebase 연결 테스트</h1>
+    <div id="status">테스트 중...</div>
+
+    <!-- Firebase SDK CDN 로드 -->
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+
+        try {
+            // Firebase 초기화
+            const app = firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+            const db = firebase.firestore();
+            
+            document.getElementById('status').innerHTML = 
+                '✅ Firebase 연결 성공!<br>' +
+                '📱 앱: ' + app.name + '<br>' +
+                '🔐 Auth: ' + (!!auth) + '<br>' +
+                '🗄️ Firestore: ' + (!!db);
+                
+            console.log('Firebase 초기화 성공');
+        } catch (error) {
+            document.getElementById('status').innerHTML = '❌ Firebase 연결 실패: ' + error.message;
+            console.error('Firebase 초기화 실패:', error);
+        }
+    </script>
+</body>
+</html>

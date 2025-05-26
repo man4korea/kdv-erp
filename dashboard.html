@@ -360,12 +360,33 @@
     </main>
     
     <!-- Firebase 및 메인 스크립트 -->
-    <!-- 햄버거 버튼 기본 기능 (폴백) -->
-    <script src="js/dashboard-fallback.js"></script>
+    <!-- Firebase SDK CDN 로드 -->
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
     
-    <!-- Firebase 로드 실패시 대체 인증 체크 -->
-    <script src="js/firebase-load-check.js"></script>
-    <!-- 대시보드 JavaScript 모듈 -->
-    <script type="module" src="./js/dashboard.js?v=1.10"></script>
+    <!-- Firebase 초기화 -->
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+        
+        // Firebase 초기화
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log('🔥 Firebase 초기화 성공');
+        } catch (error) {
+            console.error('❌ Firebase 초기화 실패:', error);
+        }
+    </script>
+    
+    <!-- 대시보드 단순화 스크립트 -->
+    <script src="js/dashboard-simple.js"></script>
 </body>
 </html>

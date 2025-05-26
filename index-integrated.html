@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<!-- 📁 index.html
+     KDV ERP 시스템 - 로그인 페이지 (초기 진입점)
+     Create at 250526_1500 Ver1.01 -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - KDV ERP 시스템</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="alternate icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- 로그인 헤더 -->
+            <div class="login-header">
+                <h1 class="login-logo">CorpEasy</h1>
+                <p class="login-subtitle">KDV ERP 시스템에 로그인하세요</p>
+            </div>
+            
+            <!-- 로그인 폼 -->
+            <form class="login-form" id="loginForm">
+                <!-- 이메일 입력 -->
+                <div class="form-group">
+                    <label for="email" class="form-label">이메일 주소</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        class="form-input" 
+                        placeholder="example@company.com"
+                        required
+                        autocomplete="email"
+                    >
+                    <div class="error-message" id="emailError">올바른 이메일 주소를 입력해주세요.</div>
+                </div>
+                
+                <!-- 비밀번호 입력 -->
+                <div class="form-group">
+                    <label for="password" class="form-label">비밀번호</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="비밀번호를 입력하세요"
+                        required
+                        autocomplete="current-password"
+                    >
+                    <div class="error-message" id="passwordError">비밀번호를 입력해주세요.</div>
+                </div>
+                
+                <!-- 로그인 유지 체크박스 -->
+                <div class="remember-me">
+                    <input type="checkbox" id="rememberMe" name="rememberMe">
+                    <label for="rememberMe" class="text-sm">로그인 상태 유지</label>
+                </div>
+                
+                <!-- 로그인 버튼 -->
+                <button type="submit" class="login-button" id="loginButton">
+                    <span class="loading-spinner"></span>
+                    <span class="button-text">로그인</span>
+                </button>
+                
+                <!-- 전체 오류 메시지 -->
+                <div class="error-message" id="generalError">
+                    <!-- 일반적인 로그인 오류가 여기에 표시됩니다 -->
+                </div>
+            </form>
+            
+            <!-- 로그인 푸터 -->
+            <div class="login-footer">
+                <a href="#" class="forgot-password" id="forgotPassword">비밀번호를 잊으셨나요?</a>
+            </div>
+            
+            <!-- 시스템 정보 -->
+            <div class="system-info">
+                <p>KDV ERP System v1.0 | © 2025</p>
+                <p>최적화된 브라우저: Chrome, Firefox, Safari</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK CDN 로드 (공식 버전 11.8.1) -->
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-compat.js"></script>
+    
+    <!-- 통합된 로그인 스크립트 (캐시 방지용) -->
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAfSlSi4pNlKvMU-NBpQ3ZWSeG4QNpZiCk",
+            authDomain: "kdv-sys.firebaseapp.com",
+            projectId: "kdv-sys",
+            storageBucket: "kdv-sys.firebasestorage.app",
+            messagingSenderId: "352925761129",
+            appId: "1:352925761129:web:a9c9cf2e1154d745faecf8"
+        };
+
+        // Firebase 초기화
+        let app, auth, db;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log('🔥 Firebase 초기화 성공!');
+        } catch (error) {
+            console.error('❌ Firebase 초기화 실패:', error);
+        }
+
+        // 로그인 매니저 클래스
+        class LoginManager {
+            constructor() {
+                this.currentUser = null;
+                console.log('🔐 LoginManager 생성 완료');
+            }
+            
+            async login(email, password, rememberMe = false) {
+                try {
+                    console.log('🔑 로그인 시도:', email);
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    console.log('✅ Firebase 로그인 성공:', user.email);
+                    
+                    const userData = {
+                        uid: user.uid,
+                        email: user.email,
+                        emailVerified: user.emailVerified,
+                        displayName: user.displayName || email.split('@')[0],
+                        lastLoginTime: new Date().toISOString(),
+                        rememberMe: rememberMe
+                    };
+                    
+                    this.currentUser = {
+                        isLoggedIn: true,
+                        user: userData,
+                        profile: {
+                            level: '일반',
+                            permissions: ['read', 'write'],
+                            department: 'KDV',
+                            position: '사용자'
+                        }
+                    };
+                    
+                    if (rememberMe) {
+                        localStorage.setItem('kdv_remember_login', 'true');
+                        localStorage.setItem('kdv_user_data', JSON.stringify(userData));
+                    } else {
+                        sessionStorage.setItem('kdv_user_session', JSON.stringify(userData));
+                    }
+                    
+                    return {
+                        success: true,
+                        user: userData,
+                        message: '로그인 성공'
+                    };
+                    
+                } catch (error) {
+                    console.error('❌ 로그인 실패:', error);
+                    return {
+                        success: false,
+                        error: error.code || error.message,
+                        message: this.getErrorMessage(error)
+                    };
+                }
+            }
+            
+            getErrorMessage(error) {
+                const errorCode = error.code || error.message || error;
+                const errorMessages = {
+                    'auth/user-not-found': '등록되지 않은 이메일 주소입니다.',
+                    'auth/wrong-password': '비밀번호가 올바르지 않습니다.',
+                    'auth/invalid-email': '이메일 주소 형식이 올바르지 않습니다.',
+                    'auth/user-disabled': '비활성화된 계정입니다. 관리자에게 문의하세요.',
+                    'auth/too-many-requests': '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요.',
+                    'auth/network-request-failed': '네트워크 연결을 확인해주세요.',
+                    'auth/invalid-credential': '인증 정보가 올바르지 않습니다.',
+                    'auth/operation-not-allowed': '이메일/비밀번호 로그인이 비활성화되어 있습니다.'
+                };
+                return errorMessages[errorCode] || '로그인 중 오류가 발생했습니다. 다시 시도해주세요.';
+            }
+        }
+
+        // 로그인 매니저 인스턴스 생성
+        const loginManager = new LoginManager();
+
+        // DOM 로드 완료 후 실행
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 DOM 로드 완료');
+            
+            // 폼 이벤트 리스너 설정
+            const loginForm = document.getElementById('loginForm');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const forgotPasswordLink = document.getElementById('forgotPassword');
+            
+            // 로그인 폼 제출 이벤트
+            loginForm.addEventListener('submit', handleLoginSubmit);
+            
+            // 입력 필드 검증 이벤트
+            emailInput.addEventListener('blur', validateEmail);
+            passwordInput.addEventListener('blur', validatePassword);
+            
+            // 입력 시 오류 메시지 제거
+            emailInput.addEventListener('input', clearFieldError);
+            passwordInput.addEventListener('input', clearFieldError);
+            
+            // 비밀번호 찾기 (임시)
+            forgotPasswordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('비밀번호 재설정 기능은 준비 중입니다.\\n시스템 관리자에게 문의해주세요.');
+            });
+
+            // 테스트 계정 정보 표시 (개발 모드)
+            if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
+                showTestAccountInfo();
+            }
+        });
+
+        // 로그인 폼 제출 처리
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            
+            if (!validateForm(email, password)) {
+                return;
+            }
+            
+            try {
+                setLoadingState(true);
+                clearAllErrors();
+                
+                const result = await loginManager.login(email, password, rememberMe);
+                
+                if (result.success) {
+                    console.log('✅ 로그인 성공:', result.user.email);
+                    showSuccessMessage('로그인 성공! 메인 페이지로 이동합니다...');
+                    
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ 로그인 오류:', error);
+                showGeneralError(error.message);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        // 폼 검증
+        function validateForm(email, password) {
+            let isValid = true;
+            
+            if (!email) {
+                showFieldError('email', '이메일 주소를 입력해주세요.');
+                isValid = false;
+            } else if (!isValidEmail(email)) {
+                showFieldError('email', '올바른 이메일 형식이 아닙니다.');
+                isValid = false;
+            }
+            
+            if (!password) {
+                showFieldError('password', '비밀번호를 입력해주세요.');
+                isValid = false;
+            } else if (password.length < 6) {
+                showFieldError('password', '비밀번호는 6자 이상이어야 합니다.');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function validateEmail() {
+            const email = document.getElementById('email').value.trim();
+            if (email && !isValidEmail(email)) {
+                showFieldError('email', '올바른 이메일 형식이 아닙니다.');
+            } else {
+                clearFieldError('email');
+            }
+        }
+
+        function validatePassword() {
+            const password = document.getElementById('password').value;
+            if (password && password.length < 6) {
+                showFieldError('password', '비밀번호는 6자 이상이어야 합니다.');
+            } else {
+                clearFieldError('password');
+            }
+        }
+
+        function setLoadingState(isLoading) {
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = loginButton.querySelector('.button-text');
+            
+            if (isLoading) {
+                loginButton.disabled = true;
+                loginButton.classList.add('loading');
+                buttonText.textContent = '로그인 중...';
+            } else {
+                loginButton.disabled = false;
+                loginButton.classList.remove('loading');
+                buttonText.textContent = '로그인';
+            }
+        }
+
+        function showFieldError(fieldName, message) {
+            const input = document.getElementById(fieldName);
+            const errorDiv = document.getElementById(fieldName + 'Error');
+            
+            input.classList.add('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function clearFieldError(fieldName) {
+            if (typeof fieldName === 'string') {
+                const input = document.getElementById(fieldName);
+                const errorDiv = document.getElementById(fieldName + 'Error');
+                
+                input.classList.remove('error');
+                errorDiv.classList.remove('show');
+            } else {
+                const fieldName = fieldName.target.id;
+                clearFieldError(fieldName);
+            }
+        }
+
+        function showGeneralError(message) {
+            const errorDiv = document.getElementById('generalError');
+            errorDiv.textContent = message;
+            errorDiv.style.color = 'var(--danger)';
+            errorDiv.style.backgroundColor = 'var(--bg-danger)';
+            errorDiv.classList.add('show');
+        }
+
+        function clearAllErrors() {
+            clearFieldError('email');
+            clearFieldError('password');
+            const generalError = document.getElementById('generalError');
+            generalError.classList.remove('show');
+            generalError.style.backgroundColor = '';
+        }
+
+        function showSuccessMessage(message) {
+            const errorDiv = document.getElementById('generalError');
+            errorDiv.textContent = message;
+            errorDiv.style.color = 'var(--success)';
+            errorDiv.style.backgroundColor = 'var(--bg-success)';
+            errorDiv.classList.add('show');
+        }
+
+        function showTestAccountInfo() {
+            console.log('🔧 개발 모드 - 테스트 계정 정보:');
+            console.log('이메일: man4korea@gmail.com');
+            console.log('비밀번호: dmlwjdqn@Wkd24');
+            
+            const systemInfo = document.querySelector('.system-info');
+            const testInfo = document.createElement('div');
+            testInfo.style.marginTop = '10px';
+            testInfo.style.padding = '10px';
+            testInfo.style.backgroundColor = '#fff3cd';
+            testInfo.style.border = '1px solid #ffeaa7';
+            testInfo.style.borderRadius = '4px';
+            testInfo.style.fontSize = '12px';
+            testInfo.innerHTML = `
+                <strong>🧪 테스트 계정 (개발용)</strong><br>
+                이메일: man4korea@gmail.com<br>
+                비밀번호: dmlwjdqn@Wkd24
+            `;
+            systemInfo.appendChild(testInfo);
+        }
+    </script>
+</body>
+</html>
