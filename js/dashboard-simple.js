@@ -1,6 +1,6 @@
 // 📁 js/dashboard-simple.js
 // KDV 시스템 - 대시보드 단순화 스크립트 (CDN 호환)
-// Create at 250526_1530 Ver1.01
+// Create at 250526_1600 Ver1.02
 
 // CDN 방식으로 변경 - import 문 제거
 
@@ -198,23 +198,49 @@ function updateStatCard(cardId, value, change) {
  * 햄버거 메뉴 설정
  */
 function setupHamburgerMenu() {
-    const hamburgerButton = document.querySelector('.hamburger-menu');
+    const hamburgerButton = document.querySelector('.hamburger-btn'); // 올바른 선택자
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.querySelector('.sidebar-overlay');
+    const closeButton = document.querySelector('#sidebarCloseBtn');
     
+    console.log('🍔 햄버거 메뉴 설정:', {
+        hamburgerButton: !!hamburgerButton,
+        sidebar: !!sidebar,
+        overlay: !!overlay,
+        closeButton: !!closeButton
+    });
+    
+    // 햄버거 버튼 클릭 이벤트
     if (hamburgerButton && sidebar) {
         hamburgerButton.addEventListener('click', function() {
+            console.log('🍔 햄버거 버튼 클릭');
             sidebar.classList.toggle('active');
             if (overlay) {
                 overlay.classList.toggle('active');
             }
+            console.log('📋 사이드바 상태:', sidebar.classList.contains('active'));
+        });
+    } else {
+        console.error('❌ 햄버거 버튼 또는 사이드바를 찾을 수 없습니다.');
+    }
+    
+    // 오버레이 클릭 이벤트 (사이드바 닫기)
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            console.log('📋 오버레이 클릭 - 사이드바 닫기');
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
         });
     }
     
-    if (overlay) {
-        overlay.addEventListener('click', function() {
+    // 닫기 버튼 클릭 이벤트
+    if (closeButton) {
+        closeButton.addEventListener('click', function() {
+            console.log('❌ 닫기 버튼 클릭 - 사이드바 닫기');
             sidebar.classList.remove('active');
-            overlay.classList.remove('active');
+            if (overlay) {
+                overlay.classList.remove('active');
+            }
         });
     }
 }
